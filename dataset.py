@@ -50,7 +50,7 @@ class BDataset(Dataset):
 
     def __transform__(self, data):
         img, normal = data
-        
+
         if self.transform is not None:
             augmentations = self.transform(image=img, normal=normal)
             img = augmentations["image"]
@@ -64,25 +64,25 @@ class LoadImages():
         self.json_data = json_data
         self.transform = transform
         self.count = 0
-        
+
     def __len__(self):
         return len(self.json_data)
-        
+
     def __iter__(self):
         self.count = 0
         return self
-    
+
     def __next__(self):
         index = self.count
-        
+
         if self.count == self.__len__():
             raise StopIteration
         self.count += 1
-        
+
         data = self.__load__(index)
         data =  self.__transform__(data)
         return data
-        
+
     def __load__(self, index):
         img_path = self.json_data[index]["image"]
         output_img_path = self.json_data[index]["output"]
@@ -90,24 +90,24 @@ class LoadImages():
         img = load_image(img_path)
 
         return img, output_img_path
-    
+
     def __transform__(self, data):
         img, output_path = data
         og_img = copy(img)
-        
+
         if self.transform is not None:
             augmentations = self.transform(image=img)
             img = augmentations["image"]
-        
+
         return og_img, img, output_path
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     from config import JSON, IMAGE_SIZE
     import albumentations as A
     import my_albumentations as M
     import matplotlib.pyplot as plt
-    
+
     def visualize(image):
         plt.figure(figsize=(10, 10))
         plt.axis('off')
@@ -132,7 +132,7 @@ if __name__ == "__main__":
             A.OneOf([
                 A.IAASharpen(),
                 A.IAAEmboss(),
-                A.RandomBrightnessContrast(),            
+                A.RandomBrightnessContrast(),
             ], p=0.3),
             A.Normalize(mean=0, std=1),
             M.MyToTensorV2(),
@@ -141,7 +141,7 @@ if __name__ == "__main__":
             'normal': 'normal',
         }
     )
-    
+
     img_transform = A.Compose(
         [
             A.Normalize(mean=0, std=1),
@@ -149,11 +149,11 @@ if __name__ == "__main__":
         ]
     )
 
-    _, dataloader = create_dataloader("../bdataset_segmentation", "test.json", transform=my_transform)
+    _, dataloader = create_dataloader("../bdataset", "test.json", transform=my_transform)
     imgs, normals = next(iter(dataloader))
     assert imgs.shape == (2, 3, 256, 256), f"dataset error {imgs.shape}"
     assert normals.shape == (2, 3, 256, 256), f"dataset error {normals.shape}"
-    
+
     dataset = LoadImages(JSON, transform=img_transform)
     og_img, img, path = next(iter(dataset))
     assert og_img.shape == (256, 256, 3), f"dataset error {og_img.shape}"
