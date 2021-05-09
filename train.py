@@ -27,24 +27,13 @@ from dataset import create_dataloader
 def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
     loop = tqdm(dataloader, position=0, leave=True)
 
-    for _, imgs in enumerate(loop):
-        imgs = imgs.to(DEVICE, non_blocking=True)
+    for _, tensors in enumerate(loop):
+        imgs, normals = tensors_to_device(tensors, DEVICE)
 
         predictions = model(imgs)
-        hp_y = predictions[:, 1:, :, :] - predictions[:, 0:-1, :, :]
-        hp_z = predictions[:, :, 1:, :] - predictions[:, :, 0:-1, :]
-        
-        hp_y_target = torch.zeros_like(hp_y)
-        hp_z_target = torch.zeros_like(hp_z)
-        
-        predictions = predictions.view(predictions.shape[0], predictions.shape[1], -1)
-        _, target = torch.max(predictions, 1)
-        
-        predictions = tuple(tensors_to_device((predictions, hp_y, hp_z), DEVICE))
-        targets = tuple(tensors_to_device((target, hp_y_target, hp_z_target), DEVICE))
 
-        loss = loss_fn(predictions, targets)
-        metric_fn.evaluate(predictions, targets)
+        loss = loss_fn(predictions, normals)
+        metric_fn.evaluate(predictions, normals)
 
         model.zero_grad()
         loss.backward()
@@ -55,9 +44,9 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
 
 def train(config=None, config_test=None):
     torch.backends.cudnn.benchmark = True
-    
+
     config = parse_train_config() if not config else config
-    
+
     transform = A.Compose(
         [
             M.MyRandomResizedCrop(width=config.IMAGE_SIZE, height=config.IMAGE_SIZE),
@@ -76,24 +65,24 @@ def train(config=None, config_test=None):
             A.OneOf([
                 A.IAASharpen(),
                 A.IAAEmboss(),
-                A.RandomBrightnessContrast(),            
+                A.RandomBrightnessContrast(),
             ], p=0.3),
             A.Normalize(mean=0, std=1),
             M.MyToTensorV2(),
-        ]
+        ],
+        additional_targets={
+            'normal': 'normal',
+        }
     )
 
-    _, dataloader = create_dataloader(config.DATASET_ROOT, config.JSON_PATH, 
-                                      batch_size=config.BATCH_SIZE, transform=transform, 
+    _, dataloader = create_dataloader(config.DATASET_ROOT, config.JSON_PATH,
+                                      batch_size=config.BATCH_SIZE, transform=transform,
                                       workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
 
     model = Model()
-    # solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), 
-    #                           lr=config.LEARNING_RATE, betas=config.BETAS,
-    #                           eps=config.EPS, weight_decay=config.WEIGHT_DECAY)
-    solver = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), 
-                              lr=config.LEARNING_RATE, momentum=config.MOMENTUM,
-                              dampening=config.DAMPENING, weight_decay=config.WEIGHT_DECAY)
+    solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                              lr=config.LEARNING_RATE, betas=config.BETAS,
+                              eps=config.EPS, weight_decay=config.WEIGHT_DECAY)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(solver, milestones=config.MILESTONES, gamma=config.GAMMA)
     model = model.to(DEVICE)
 
@@ -128,7 +117,7 @@ if __name__ == "__main__":
     parser.add_argument('--train', type=str, default="train.yaml", help='train config file')
     parser.add_argument('--test', type=str, default="test.yaml", help='test config file')
     opt = parser.parse_args()
-    
+
     config_train = parse_train_config(read_yaml_config(opt.train))
     config_test = parse_test_config(read_yaml_config(opt.test))
 

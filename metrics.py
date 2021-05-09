@@ -15,11 +15,8 @@ class MetricFunction():
         self.error_sum = {}
         self.error_avg = {}
 
-    def evaluate(self, predictions, targets):
-        (predictions, hp_y, hp_z) = predictions
-        (targets, hp_y_target, hp_z_target) = targets
-        
-        error_val = evaluate_error_classification(predictions, targets)
+    def evaluate(self, predictions, normals):
+        error_val = evaluate_error_classification(predictions, normals)
         
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)

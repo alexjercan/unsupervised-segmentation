@@ -20,6 +20,12 @@ def load_image(path):
     return img
 
 
+def load_normal(path):
+    img = exr2normal(path)  # 3 channel normal
+    assert img is not None, 'Image Not Found ' + path
+    return img
+
+
 def img2rgb(path):
     if not os.path.isfile(path):
         return None
@@ -28,6 +34,13 @@ def img2rgb(path):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     return img
+
+
+def exr2normal(path):
+    if not os.path.isfile(path):
+        return None
+
+    return cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH) * 2 - 1
 
 
 label_colors = np.random.randint(255, size=(100, 3))

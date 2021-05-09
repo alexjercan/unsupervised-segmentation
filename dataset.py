@@ -10,7 +10,7 @@ import json
 from copy import copy
 
 from torch.utils.data import Dataset, DataLoader
-from util import load_image
+from util import load_image, load_normal
 
 
 def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
@@ -41,19 +41,22 @@ class BDataset(Dataset):
 
     def __load__(self, index):
         img_path = os.path.join(self.dataset_root, self.json_data[index]["image"])
+        normal_path = os.path.join(self.dataset_root, self.json_data[index]["normal"])
 
         img = load_image(img_path)
+        normal = load_normal(normal_path)
 
-        return img
+        return img, normal
 
     def __transform__(self, data):
-        img = data
+        img, normal = data
         
         if self.transform is not None:
-            augmentations = self.transform(image=img)
+            augmentations = self.transform(image=img, normal=normal)
             img = augmentations["image"]
+            normal = augmentations["normal"]
 
-        return img
+        return img, normal
 
 
 class LoadImages():
@@ -133,7 +136,10 @@ if __name__ == "__main__":
             ], p=0.3),
             A.Normalize(mean=0, std=1),
             M.MyToTensorV2(),
-        ]
+        ],
+        additional_targets={
+            'normal': 'normal',
+        }
     )
     
     img_transform = A.Compose(
@@ -143,9 +149,10 @@ if __name__ == "__main__":
         ]
     )
 
-    _, dataloader = create_dataloader("../bdataset", "train1.json", transform=my_transform)
-    imgs = next(iter(dataloader))
+    _, dataloader = create_dataloader("../bdataset_segmentation", "test.json", transform=my_transform)
+    imgs, normals = next(iter(dataloader))
     assert imgs.shape == (2, 3, 256, 256), f"dataset error {imgs.shape}"
+    assert normals.shape == (2, 3, 256, 256), f"dataset error {normals.shape}"
     
     dataset = LoadImages(JSON, transform=img_transform)
     og_img, img, path = next(iter(dataset))
