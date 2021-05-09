@@ -15,7 +15,7 @@ cd ../tmp/
 # Download/unzip images and labels
 d='..' # unzip directory
 filename="bdataset.zip"
-fileid="1Xbyltr4ZhsLx1i8yKuOwWxak0heZkiew"
+fileid="19TeFDaf2tmrnNsD5bTz1rH3ElWtDNfaN"
 echo 'Downloading' $url$f '...'
 curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${fileid}" > /dev/null
 curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${fileid}" -o ${filename} && unzip -q ${filename} -d $d && rm ${filename} & # download, unzip, remove in background
