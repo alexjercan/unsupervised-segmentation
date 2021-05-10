@@ -154,6 +154,7 @@ class SurfaceLoss(nn.Module):
 
     def forward(self, predictions, normals):
         _, predictions = torch.max(predictions, 1, keepdim=True)
+        predictions = predictions.float()
 
         surfaces = (torch.abs(normals) >= self.eps)
         surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :]))
