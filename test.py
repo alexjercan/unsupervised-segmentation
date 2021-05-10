@@ -22,14 +22,12 @@ def run_test(model, dataloader, loss_fn, metric_fn):
     loop = tqdm(dataloader, position=0, leave=True)
 
     for _, tensors in enumerate(loop):
-        imgs, normals = tensors_to_device(tensors, DEVICE)
+        imgs, normals, depths = tensors_to_device(tensors, DEVICE)
         with torch.no_grad():
-            imgs = imgs.to(DEVICE, non_blocking=True)
-
             predictions = model(imgs)
 
-            loss_fn(predictions, normals)
-            metric_fn.evaluate(predictions, normals)
+            loss_fn(predictions, (normals, depths))
+            metric_fn.evaluate(predictions, (normals, depths))
     loop.close()
 
 
@@ -46,6 +44,7 @@ def test(model=None, config=None):
         ],
         additional_targets={
             'normal': 'normal',
+            'depth' : 'depth',
         }
     )
 

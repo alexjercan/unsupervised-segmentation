@@ -28,12 +28,12 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
     loop = tqdm(dataloader, position=0, leave=True)
 
     for _, tensors in enumerate(loop):
-        imgs, normals = tensors_to_device(tensors, DEVICE)
+        imgs, normals, depths = tensors_to_device(tensors, DEVICE)
 
         predictions = model(imgs)
 
-        loss = loss_fn(predictions, normals)
-        metric_fn.evaluate(predictions, normals)
+        loss = loss_fn(predictions, (normals, depths))
+        metric_fn.evaluate(predictions, (normals, depths))
 
         model.zero_grad()
         loss.backward()
@@ -72,6 +72,7 @@ def train(config=None, config_test=None):
         ],
         additional_targets={
             'normal': 'normal',
+            'depth' : 'depth',
         }
     )
 

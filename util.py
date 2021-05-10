@@ -20,6 +20,12 @@ def load_image(path):
     return img
 
 
+def load_depth(path, max_depth=80):
+    img = exr2depth(path, maxvalue=max_depth)  # 1 channel depth
+    assert img is not None, 'Image Not Found ' + path
+    return img
+
+
 def load_normal(path):
     img = exr2normal(path)  # 3 channel normal
     assert img is not None, 'Image Not Found ' + path
@@ -34,6 +40,18 @@ def img2rgb(path):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     return img
+
+
+def exr2depth(path, maxvalue=80):
+    if not os.path.isfile(path):
+        return None
+
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH)
+
+    img[img > maxvalue] = maxvalue
+    img = img / maxvalue
+
+    return np.array(img).astype(np.float32).reshape((img.shape[0], img.shape[1], -1))
 
 
 def exr2normal(path):

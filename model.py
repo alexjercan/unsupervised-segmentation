@@ -128,20 +128,13 @@ class Model(nn.Module):
         x = self.predict(*x)
         return x
 
-
-class LossFunction(nn.Module):
+class ContinuityLoss(nn.Module):
     def __init__(self):
-        super(LossFunction, self).__init__()
-        self.loss = nn.CrossEntropyLoss()
+        super(ContinuityLoss, self).__init__()
         self.y_loss = nn.L1Loss()
         self.z_loss = nn.L1Loss()
-        self.obj_loss = nn.L1Loss()
 
-        self.loss_val = 0
-        self.c_loss_val= 0
-        self.obj_loss_val = 0
-
-    def forward(self, predictions, normals):
+    def forward(self, predictions):
         device = predictions.device
 
         hp_y = predictions[:, 1:, :, :] - predictions[:, 0:-1, :, :]
@@ -150,24 +143,54 @@ class LossFunction(nn.Module):
         hp_y_target = torch.zeros_like(hp_y, device=device)
         hp_z_target = torch.zeros_like(hp_z, device=device)
 
+        return (self.y_loss(hp_y, hp_y_target) + self.z_loss(hp_z, hp_z_target))
+
+
+class SurfaceLoss(nn.Module):
+    def __init__(self, eps=1e-8):
+        super(SurfaceLoss, self).__init__()
+        self.loss = nn.L1Loss()
+        self.eps = eps
+
+    def forward(self, predictions, normals):
+        _, predictions = torch.max(predictions, 1, keepdim=True)
+
+        surfaces = (torch.abs(normals) >= self.eps)
+        surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :]))
+        surfaces = surfaces.float()
+
+        return self.loss(predictions, predictions * surfaces)
+
+
+class LossFunction(nn.Module):
+    def __init__(self):
+        super(LossFunction, self).__init__()
+        self.c_loss = ContinuityLoss()
+        self.s_loss = SurfaceLoss()
+        self.f_loss = nn.CrossEntropyLoss()
+
+        self.c_loss_val= 0
+        self.s_loss_val = 0
+        self.f_loss_val = 0
+
+    def forward(self, predictions, data):
+        (normals, depths) = data
+
+        c_loss = self.c_loss(predictions) * 5.0
+        s_loss = self.s_loss(predictions, normals) * 1.0
+
         _, target = torch.max(predictions, 1)
+        f_loss = self.f_loss(predictions, target) * 1.0
 
-        pred_faces = (target > 0.1).float()
-        normal_faces = (torch.abs(normals[:, 2, :, :]) < 1e-3).float()
-
-        loss = self.loss(predictions, target) * 1.0
-        c_loss = (self.y_loss(hp_y, hp_y_target) + self.z_loss(hp_z, hp_z_target)) * 5.0
-        o_loss = self.obj_loss(pred_faces, normal_faces) * 1.0
-
-        self.loss_val = loss.item()
         self.c_loss_val = c_loss.item()
-        self.obj_loss_val = o_loss.item()
+        self.s_loss_val = s_loss.item()
+        self.f_loss_val = f_loss.item()
 
-        return loss + c_loss + o_loss
+        return c_loss + s_loss + f_loss
 
     def show(self):
-        loss = self.loss_val + self.c_loss_val + self.obj_loss_val
-        return f'(total:{loss:.4f} x_entropy:{self.loss_val:.4f} cont:{self.c_loss_val:.4f} obj:{self.obj_loss_val:.4f})'
+        loss = self.c_loss_val + self.s_loss_val + self.f_loss_val
+        return f'(total:{loss:.4f} c:{self.c_loss_val:.4f} s:{self.s_loss_val:.4f} f:{self.f_loss_val:.4f})'
 
 
 if __name__ == "__main__":

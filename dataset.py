@@ -10,7 +10,7 @@ import json
 from copy import copy
 
 from torch.utils.data import Dataset, DataLoader
-from util import load_image, load_normal
+from util import load_depth, load_image, load_normal
 
 
 def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
@@ -42,21 +42,24 @@ class BDataset(Dataset):
     def __load__(self, index):
         img_path = os.path.join(self.dataset_root, self.json_data[index]["image"])
         normal_path = os.path.join(self.dataset_root, self.json_data[index]["normal"])
+        depth_path = os.path.join(self.dataset_root, self.json_data[index]["depth"])
 
         img = load_image(img_path)
         normal = load_normal(normal_path)
+        depth = load_depth(depth_path)
 
-        return img, normal
+        return img, normal, depth
 
     def __transform__(self, data):
-        img, normal = data
+        img, normal, depth = data
 
         if self.transform is not None:
-            augmentations = self.transform(image=img, normal=normal)
+            augmentations = self.transform(image=img, normal=normal, depth=depth)
             img = augmentations["image"]
             normal = augmentations["normal"]
+            depth = augmentations["depth"]
 
-        return img, normal
+        return img, normal, depth
 
 
 class LoadImages():
@@ -139,6 +142,7 @@ if __name__ == "__main__":
         ],
         additional_targets={
             'normal': 'normal',
+            'depth': 'depth',
         }
     )
 
@@ -150,9 +154,10 @@ if __name__ == "__main__":
     )
 
     _, dataloader = create_dataloader("../bdataset", "test.json", transform=my_transform)
-    imgs, normals = next(iter(dataloader))
+    imgs, normals, depths = next(iter(dataloader))
     assert imgs.shape == (2, 3, 256, 256), f"dataset error {imgs.shape}"
     assert normals.shape == (2, 3, 256, 256), f"dataset error {normals.shape}"
+    assert depths.shape == (2, 1, 256, 256), f"dataset error {depths.shape}"
 
     dataset = LoadImages(JSON, transform=img_transform)
     og_img, img, path = next(iter(dataset))
