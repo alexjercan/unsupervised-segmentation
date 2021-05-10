@@ -152,7 +152,7 @@ class SurfaceLoss(nn.Module):
         self.loss = nn.L1Loss()
         self.eps = eps
 
-    def forward(self, predictions, normals):
+    def forward(self, predictions, normals, depths):
         _, predictions = torch.max(predictions, 1, keepdim=True)
         predictions = predictions.float()
 
@@ -160,7 +160,15 @@ class SurfaceLoss(nn.Module):
         surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :]))
         surfaces = surfaces.float()
 
-        return self.loss(predictions, predictions * surfaces)
+        threshold = 0.5
+        condition = depths < threshold
+        foreground = torch.where(condition, surfaces, torch.zeros_like(surfaces))
+        background = torch.where(condition, torch.zeros_like(surfaces), surfaces)
+
+        p_foreground = predictions - predictions * background
+        p_background = predictions - predictions * foreground
+
+        return self.loss(p_foreground, foreground) + self.loss(p_background, background)
 
 
 class LossFunction(nn.Module):
@@ -178,7 +186,7 @@ class LossFunction(nn.Module):
         (normals, depths) = data
 
         c_loss = self.c_loss(predictions) * 5.0
-        s_loss = self.s_loss(predictions, normals) * 1.0
+        s_loss = self.s_loss(predictions, normals, depths) * 1.0
 
         _, target = torch.max(predictions, 1)
         f_loss = self.f_loss(predictions, target) * 1.0
