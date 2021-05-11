@@ -7,6 +7,7 @@
 # - https://github.com/kanezaki/pytorch-unsupervised-segmentation-tip/blob/master/demo.py
 #
 
+from functools import reduce
 import torch
 import torch.nn as nn
 
@@ -118,15 +119,15 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, out_channels=100):
+    def __init__(self, out_channels=100, num_layers=2):
         super().__init__()
         self.feature = UNetFeature()
-        self.predict = UNetFCN(out_channels=out_channels)
+        self.predict = [UNetFCN(out_channels=out_channels) for _ in range(num_layers)]
 
     def forward(self, x):
         x = self.feature(x)
-        x = self.predict(*x)
-        return x
+        x = [p(*x) for p in self.predict]
+        return torch.stack(x, dim=-1)
 
 class ContinuityLoss(nn.Module):
     def __init__(self):
@@ -137,8 +138,8 @@ class ContinuityLoss(nn.Module):
     def forward(self, predictions):
         device = predictions.device
 
-        hp_y = predictions[:, 1:, :, :] - predictions[:, 0:-1, :, :]
-        hp_z = predictions[:, :, 1:, :] - predictions[:, :, 0:-1, :]
+        hp_y = predictions[:, 1:, :, :, :] - predictions[:, 0:-1, :, :, :]
+        hp_z = predictions[:, :, 1:, :, :] - predictions[:, :, 0:-1, :, :]
 
         hp_y_target = torch.zeros_like(hp_y, device=device)
         hp_z_target = torch.zeros_like(hp_z, device=device)
@@ -149,26 +150,25 @@ class ContinuityLoss(nn.Module):
 class SurfaceLoss(nn.Module):
     def __init__(self, eps=1e-8):
         super(SurfaceLoss, self).__init__()
-        self.loss = nn.L1Loss()
+        self.loss = nn.CrossEntropyLoss()
         self.eps = eps
 
+
     def forward(self, predictions, normals, depths):
-        _, predictions = torch.max(predictions, 1, keepdim=True)
-        predictions = predictions.float()
+        num_layers = predictions.shape[-1]
+        eps = 1.0 / num_layers
+        values = [i * eps for i in range(num_layers)]
+
+        _, target = torch.max(predictions, 1)
+        depths = depths.squeeze(1)
 
         surfaces = (torch.abs(normals) >= self.eps)
-        surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :]))
-        surfaces = surfaces.float()
+        surfaces = torch.logical_or(surfaces[:, 0, :, :], torch.logical_or(surfaces[:, 1, :, :], surfaces[:, 2, :, :])).long()
+        surfaces = [torch.where(torch.logical_and(depths < i + eps, i <= depths), surfaces, torch.zeros_like(surfaces)) for i in values]
+        surfaces = torch.stack(surfaces, dim=-1)
+        surfaces = surfaces * target
 
-        threshold = 0.5
-        condition = depths < threshold
-        foreground = torch.where(condition, surfaces, torch.zeros_like(surfaces))
-        background = torch.where(condition, torch.zeros_like(surfaces), surfaces)
-
-        p_foreground = predictions - predictions * background
-        p_background = predictions - predictions * foreground
-
-        return self.loss(p_foreground, foreground) + self.loss(p_background, background)
+        return self.loss(predictions, surfaces)
 
 
 class LossFunction(nn.Module):
@@ -176,11 +176,9 @@ class LossFunction(nn.Module):
         super(LossFunction, self).__init__()
         self.c_loss = ContinuityLoss()
         self.s_loss = SurfaceLoss()
-        self.f_loss = nn.CrossEntropyLoss()
 
         self.c_loss_val= 0
         self.s_loss_val = 0
-        self.f_loss_val = 0
 
     def forward(self, predictions, data):
         (normals, depths) = data
@@ -188,24 +186,20 @@ class LossFunction(nn.Module):
         c_loss = self.c_loss(predictions) * 5.0
         s_loss = self.s_loss(predictions, normals, depths) * 1.0
 
-        _, target = torch.max(predictions, 1)
-        f_loss = self.f_loss(predictions, target) * 1.0
-
         self.c_loss_val = c_loss.item()
         self.s_loss_val = s_loss.item()
-        self.f_loss_val = f_loss.item()
 
-        return c_loss + s_loss + f_loss
+        return c_loss + s_loss
 
     def show(self):
-        loss = self.c_loss_val + self.s_loss_val + self.f_loss_val
-        return f'(total:{loss:.4f} c:{self.c_loss_val:.4f} s:{self.s_loss_val:.4f} f:{self.f_loss_val:.4f})'
+        loss = self.c_loss_val + self.s_loss_val
+        return f'(total:{loss:.4f} c:{self.c_loss_val:.4f} s:{self.s_loss_val:.4f})'
 
 
 if __name__ == "__main__":
     img = torch.rand((4, 3, 256, 256))
-    model = Model()
+    model = Model(out_channels=100, num_layers=2)
     pred = model(img)
-    assert pred.shape == (4, 100, 256, 256), f"Model {pred.shape}"
+    assert pred.shape == (4, 100, 256, 256, 2), f"Model {pred.shape}"
 
     print("model ok")
