@@ -66,7 +66,8 @@ label_colors = np.random.randint(255, size=(100, 3))
 
 def plot_predictions(images, predictions, paths):
     _, predictions = torch.max(predictions, 1)
-    canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long)
+    device = predictions.device
+    canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
     for pred in predictions.permute(3, 0, 1, 2):
         canvas = torch.where(canvas == 0.0, pred, canvas)
     predictions = canvas.cpu().numpy()
@@ -84,7 +85,8 @@ def plot_predictions(images, predictions, paths):
 
 def save_predictions(predictions, paths):
     _, predictions = torch.max(predictions, 1)
-    canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long)
+    device = predictions.device
+    canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
     for pred in predictions.permute(3, 0, 1, 2):
         canvas = torch.where(canvas == 0.0, pred, canvas)
     predictions = canvas.cpu().numpy()
