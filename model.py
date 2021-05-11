@@ -122,7 +122,7 @@ class Model(nn.Module):
     def __init__(self, out_channels=100, num_layers=2):
         super().__init__()
         self.feature = UNetFeature()
-        self.predict = [UNetFCN(out_channels=out_channels) for _ in range(num_layers)]
+        self.predict = nn.ModuleList([UNetFCN(out_channels=out_channels) for _ in range(num_layers)])
 
     def forward(self, x):
         x = self.feature(x)
