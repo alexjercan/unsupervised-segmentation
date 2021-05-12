@@ -174,26 +174,22 @@ class SurfaceLoss(nn.Module):
 class LossFunction(nn.Module):
     def __init__(self):
         super(LossFunction, self).__init__()
-        self.c_loss = ContinuityLoss()
         self.s_loss = SurfaceLoss()
 
-        self.c_loss_val= 0
         self.s_loss_val = 0
 
     def forward(self, predictions, data):
         (normals, depths) = data
 
-        c_loss = self.c_loss(predictions) * 5.0
         s_loss = self.s_loss(predictions, normals, depths) * 1.0
 
-        self.c_loss_val = c_loss.item()
         self.s_loss_val = s_loss.item()
 
-        return c_loss + s_loss
+        return s_loss
 
     def show(self):
-        loss = self.c_loss_val + self.s_loss_val
-        return f'(total:{loss:.4f} c:{self.c_loss_val:.4f} s:{self.s_loss_val:.4f})'
+        loss = self.s_loss_val
+        return f'(total:{loss:.4f} s:{self.s_loss_val:.4f})'
 
 
 if __name__ == "__main__":

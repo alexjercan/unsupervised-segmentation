@@ -1,3 +1,8 @@
-JSON: [{"image": "data/image.png", "output": "data/output.png"}]
+JSON:
+  [
+    { "image": "data/0000.png", "output": "data/out/0000.png" },
+    { "image": "data/0001.png", "output": "data/out/0001.png" },
+    { "image": "data/0002.png", "output": "data/out/0002.png" },
+  ]
 IMAGE_SIZE: 256
 CHECKPOINT_FILE: "normal.pth"

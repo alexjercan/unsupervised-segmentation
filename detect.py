@@ -58,5 +58,5 @@ if __name__ == "__main__":
     opt = parser.parse_args()
 
     config_detect = parse_detect_config(read_yaml_config(opt.detect))
-    
+
     detect(config=config_detect)

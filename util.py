@@ -100,3 +100,4 @@ def save_predictions(predictions, paths):
         plt.axis('off')
         plt.imshow(rgb)
         plt.savefig(str(Path(path).with_suffix(".png")))
+        plt.close();
