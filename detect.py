@@ -6,6 +6,7 @@
 #
 
 from albumentations.pytorch.transforms import ToTensorV2
+import cv2
 import torch
 import argparse
 import albumentations as A
@@ -33,7 +34,8 @@ def detect(model=None, config=None):
 
     transform = A.Compose(
         [
-            A.Resize(height=config.IMAGE_SIZE, width=config.IMAGE_SIZE),
+            A.LongestMaxSize(max_size=config.IMAGE_SIZE),
+            A.PadIfNeeded(min_height=config.IMAGE_SIZE, min_width=config.IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
             A.Normalize(mean=0, std=1),
             ToTensorV2(),
         ]

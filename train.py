@@ -27,7 +27,7 @@ from dataset import create_dataloader
 def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
     loop = tqdm(dataloader, position=0, leave=True)
 
-    for _, tensors in enumerate(loop):
+    for i, tensors in enumerate(loop):
         imgs, normals, depths = tensors_to_device(tensors, DEVICE)
 
         predictions = model(imgs)
@@ -38,6 +38,8 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
         model.zero_grad()
         loss.backward()
         solver.step()
+        if i == 20:
+            break;
 
         loop.set_postfix(loss=loss_fn.show(), epoch=epoch_idx)
     loop.close()
