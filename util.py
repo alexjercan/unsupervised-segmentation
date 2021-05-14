@@ -65,6 +65,9 @@ label_colors = np.random.randint(255, size=(100, 3))
 
 
 def plot_predictions(images, predictions, paths):
+    plt.rcParams['figure.figsize'] = [12, 8]
+    plt.rcParams['figure.dpi'] = 200
+
     _, predictions = torch.max(predictions, 1)
     device = predictions.device
     canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
@@ -84,6 +87,9 @@ def plot_predictions(images, predictions, paths):
 
 
 def save_predictions(predictions, paths):
+    plt.rcParams['figure.figsize'] = [12, 8]
+    plt.rcParams['figure.dpi'] = 200
+
     _, predictions = torch.max(predictions, 1)
     device = predictions.device
     canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
