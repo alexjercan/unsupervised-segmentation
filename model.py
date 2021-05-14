@@ -119,32 +119,24 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, out_channels=100, num_layers=2):
+    def __init__(self, num_classes=10, num_layers=9):
         super().__init__()
         self.feature = UNetFeature()
-        self.predict = nn.ModuleList([UNetFCN(out_channels=out_channels) for _ in range(num_layers)])
+        self.predict = nn.ModuleList([UNetFCN(out_channels=num_classes) for _ in range(num_layers)])
+        self.num_layers = num_layers
 
-    def forward(self, x):
-        x = self.feature(x)
-        x = [p(*x) for p in self.predict]
+    def forward(self, imgs, depths):
+        m = depths.max()
+        depth = torch.max(depths[depths < m])
+        eps = depth / (self.num_layers - 1)
+        intervals = [i * eps for i in range(self.num_layers)] + [m]
+        intervals_len = len(intervals)
+
+        imgs = [torch.where(torch.logical_and(intervals[i] < depths, depths <= intervals[i + 1]), imgs, torch.zeros_like(imgs)) for i in range(intervals_len - 1)]
+
+        features = [self.feature(img) for img in imgs]
+        x = [p(*x) for p, x in zip(self.predict, features)]
         return torch.stack(x, dim=-1)
-
-class ContinuityLoss(nn.Module):
-    def __init__(self):
-        super(ContinuityLoss, self).__init__()
-        self.y_loss = nn.L1Loss()
-        self.z_loss = nn.L1Loss()
-
-    def forward(self, predictions):
-        device = predictions.device
-
-        hp_y = predictions[:, 1:, :, :, :] - predictions[:, 0:-1, :, :, :]
-        hp_z = predictions[:, :, 1:, :, :] - predictions[:, :, 0:-1, :, :]
-
-        hp_y_target = torch.zeros_like(hp_y, device=device)
-        hp_z_target = torch.zeros_like(hp_z, device=device)
-
-        return (self.y_loss(hp_y, hp_y_target) + self.z_loss(hp_z, hp_z_target))
 
 
 class SurfaceLoss(nn.Module):
@@ -156,15 +148,18 @@ class SurfaceLoss(nn.Module):
 
     def forward(self, predictions, normals, depths):
         num_layers = predictions.shape[-1]
-        eps = 1.0 / num_layers
-        values = [i * eps for i in range(num_layers)]
+        m = depths.max()
+        depth = torch.max(depths[depths < m])
+        eps = depth / (num_layers - 1)
+        intervals = [i * eps for i in range(num_layers)] + [m]
+        intervals_len = len(intervals)
 
         _, target = torch.max(predictions, 1)
         depths = depths.squeeze(1)
 
         surfaces = (torch.abs(normals) >= self.eps)
         surfaces = torch.logical_or(surfaces[:, 0, :, :], torch.logical_or(surfaces[:, 1, :, :], surfaces[:, 2, :, :])).long()
-        surfaces = [torch.where(torch.logical_and(depths < i + eps, i <= depths), surfaces, torch.zeros_like(surfaces)) for i in values]
+        surfaces = [torch.where(torch.logical_and(intervals[i] < depths, depths <= intervals[i + 1]), surfaces, torch.zeros_like(surfaces)) for i in range(intervals_len - 1)]
         surfaces = torch.stack(surfaces, dim=-1)
         surfaces = surfaces * target
 
@@ -194,8 +189,9 @@ class LossFunction(nn.Module):
 
 if __name__ == "__main__":
     img = torch.rand((4, 3, 256, 256))
-    model = Model(out_channels=100, num_layers=2)
-    pred = model(img)
-    assert pred.shape == (4, 100, 256, 256, 2), f"Model {pred.shape}"
+    depth = torch.rand((4, 1, 256, 256))
+    model = Model(num_classes=10, num_layers=2)
+    pred = model(img, depth)
+    assert pred.shape == (4, 10, 256, 256, 2), f"Model {pred.shape}"
 
     print("model ok")

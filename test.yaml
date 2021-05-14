@@ -1,4 +1,4 @@
-DATASET_ROOT: "../bdataset_segmentation"
+DATASET_ROOT: "../bdataset_scene"
 JSON_PATH: "test.json"
 BATCH_SIZE: 4
 IMAGE_SIZE: 256

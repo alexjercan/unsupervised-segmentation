@@ -10,6 +10,7 @@ import cv2
 import torch
 import argparse
 import albumentations as A
+import my_albumentations as M
 
 from config import parse_detect_config, DEVICE, read_yaml_config
 from model import Model
@@ -19,11 +20,12 @@ from dataset import LoadImages
 
 
 def generatePredictions(model, dataset):
-    for og_img, img, path in dataset:
+    for og_img, img, depth, path in dataset:
         with torch.no_grad():
             img = img.to(DEVICE, non_blocking=True).unsqueeze(0)
+            depth = depth.to(DEVICE, non_blocking=True).unsqueeze(0)
 
-            predictions = model(img)
+            predictions = model(img, depth)
             yield og_img, predictions, path
 
 
@@ -37,8 +39,12 @@ def detect(model=None, config=None):
             A.LongestMaxSize(max_size=config.IMAGE_SIZE),
             A.PadIfNeeded(min_height=config.IMAGE_SIZE, min_width=config.IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
             A.Normalize(mean=0, std=1),
-            ToTensorV2(),
-        ]
+            M.MyToTensorV2(),
+        ],
+        additional_targets={
+            'depth' : 'depth',
+        }
+
     )
 
     dataset = LoadImages(config.JSON, transform=transform)

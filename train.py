@@ -30,7 +30,7 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
     for i, tensors in enumerate(loop):
         imgs, normals, depths = tensors_to_device(tensors, DEVICE)
 
-        predictions = model(imgs)
+        predictions = model(imgs, depths)
 
         loss = loss_fn(predictions, (normals, depths))
         metric_fn.evaluate(predictions, (normals, depths))
@@ -38,8 +38,6 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
         model.zero_grad()
         loss.backward()
         solver.step()
-        if i == 20:
-            break;
 
         loop.set_postfix(loss=loss_fn.show(), epoch=epoch_idx)
     loop.close()

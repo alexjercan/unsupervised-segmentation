@@ -35,7 +35,7 @@ LOAD_MODEL = False
 SAVE_MODEL = True
 CHECKPOINT_FILE = "normal.pth"
 
-JSON = [{"image": "data/0000.png", "output": "data/out/0000.png"}]
+JSON = [{"image": "data/0000.png", "depth": "data/0000.exr", "output": "data/out/0000.png"}]
 
 
 def parse_train_config(config=None):

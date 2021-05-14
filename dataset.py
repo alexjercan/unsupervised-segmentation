@@ -89,21 +89,24 @@ class LoadImages():
 
     def __load__(self, index):
         img_path = self.json_data[index]["image"]
+        depth_path = self.json_data[index]["depth"]
         output_img_path = self.json_data[index]["output"]
 
         img = load_image(img_path)
+        depth = load_depth(depth_path)
 
-        return img, output_img_path
+        return img, depth, output_img_path
 
     def __transform__(self, data):
-        img, output_path = data
+        img, depth, output_path = data
         og_img = copy(img)
 
         if self.transform is not None:
-            augmentations = self.transform(image=img)
+            augmentations = self.transform(image=img, depth=depth)
             img = augmentations["image"]
+            depth = augmentations["depth"]
 
-        return og_img, img, output_path
+        return og_img, img, depth, output_path
 
 
 if __name__ == "__main__":
@@ -152,7 +155,10 @@ if __name__ == "__main__":
             A.PadIfNeeded(min_height=IMAGE_SIZE, min_width=IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
             A.Normalize(mean=0, std=1),
             M.MyToTensorV2(),
-        ]
+        ],
+        additional_targets={
+            'depth': 'depth'
+        }
     )
 
     _, dataloader = create_dataloader("../bdataset", "test.json", transform=my_transform)
@@ -162,7 +168,8 @@ if __name__ == "__main__":
     assert depths.shape == (2, 1, 256, 256), f"dataset error {depths.shape}"
 
     dataset = LoadImages(JSON, transform=img_transform)
-    og_img, img, path = next(iter(dataset))
+    og_img, img, depth, path = next(iter(dataset))
     assert img.shape == (3, 256, 256), f"dataset error {img.shape}"
+    assert depth.shape == (1, 256, 256), f"dataset error {depth.shape}"
 
     print("dataset ok")

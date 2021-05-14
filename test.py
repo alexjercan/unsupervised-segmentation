@@ -24,7 +24,7 @@ def run_test(model, dataloader, loss_fn, metric_fn):
     for _, tensors in enumerate(loop):
         imgs, normals, depths = tensors_to_device(tensors, DEVICE)
         with torch.no_grad():
-            predictions = model(imgs)
+            predictions = model(imgs, depths)
 
             loss_fn(predictions, (normals, depths))
             metric_fn.evaluate(predictions, (normals, depths))
