@@ -161,7 +161,7 @@ if __name__ == "__main__":
         }
     )
 
-    _, dataloader = create_dataloader("../bdataset", "test.json", transform=my_transform)
+    _, dataloader = create_dataloader("../bdataset_scene", "test.json", transform=my_transform)
     imgs, normals, depths = next(iter(dataloader))
     assert imgs.shape == (2, 3, 256, 256), f"dataset error {imgs.shape}"
     assert normals.shape == (2, 3, 256, 256), f"dataset error {normals.shape}"
