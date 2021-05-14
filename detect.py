@@ -44,7 +44,6 @@ def detect(model=None, config=None):
         additional_targets={
             'depth' : 'depth',
         }
-
     )
 
     dataset = LoadImages(config.JSON, transform=transform)

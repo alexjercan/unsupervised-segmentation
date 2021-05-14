@@ -2,6 +2,7 @@ JSON:
   [
     { "image": "data/0000.png", "depth": "data/0000.exr", "output": "data/out/0000.png" },
     { "image": "data/0001.png", "depth": "data/0001.exr", "output": "data/out/0001.png" },
+    { "image": "data/0002.png", "depth": "data/0002.exr", "output": "data/out/0002.png" },
   ]
 IMAGE_SIZE: 256
 CHECKPOINT_FILE: "normal.pth"

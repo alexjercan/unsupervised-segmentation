@@ -119,7 +119,7 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes=10, num_layers=9):
+    def __init__(self, num_classes=10, num_layers=2):
         super().__init__()
         self.feature = UNetFeature()
         self.predict = nn.ModuleList([UNetFCN(out_channels=num_classes) for _ in range(num_layers)])
