@@ -127,8 +127,7 @@ class Model(nn.Module):
 
     def forward(self, imgs, depths):
         m = depths.max()
-        depth = torch.max(depths[depths < m])
-        eps = depth / (self.num_layers - 1)
+        eps = m / (self.num_layers - 1)
         intervals = [i * eps for i in range(self.num_layers)] + [m]
         intervals_len = len(intervals)
 
@@ -149,8 +148,7 @@ class SurfaceLoss(nn.Module):
     def forward(self, predictions, normals, depths):
         num_layers = predictions.shape[-1]
         m = depths.max()
-        depth = torch.max(depths[depths < m])
-        eps = depth / (num_layers - 1)
+        eps = m / (num_layers - 1)
         intervals = [i * eps for i in range(num_layers)] + [m]
         intervals_len = len(intervals)
 
