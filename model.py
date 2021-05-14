@@ -127,7 +127,7 @@ class Model(nn.Module):
 
     def forward(self, imgs, depths):
         m = depths.max()
-        eps = m / (self.num_layers - 1)
+        eps = m / self.num_layers
         intervals = [i * eps for i in range(self.num_layers)] + [m]
         intervals_len = len(intervals)
 
@@ -148,7 +148,7 @@ class SurfaceLoss(nn.Module):
     def forward(self, predictions, normals, depths):
         num_layers = predictions.shape[-1]
         m = depths.max()
-        eps = m / (num_layers - 1)
+        eps = m / num_layers
         intervals = [i * eps for i in range(num_layers)] + [m]
         intervals_len = len(intervals)
 
