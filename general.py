@@ -13,6 +13,36 @@ def tensors_to_device(tensors, device):
     return (tensor.to(device, non_blocking=True) for tensor in tensors)
 
 
+def generate_surfaces(normals, eps=1e-8):
+    surfaces = (torch.abs(normals) >= eps)
+    surfaces = torch.logical_or(surfaces[:, 0, :, :], torch.logical_or(surfaces[:, 1, :, :], surfaces[:, 2, :, :])).long()
+    return surfaces
+
+
+def generate_layers(imgs, depths, k):
+    bs = imgs.shape[0]
+    intervals = generate_intervals(depths, k)
+    layers = [torch.stack([generate_layer(imgs[i], depths[i], intervals[i], j) for i in range(bs)]) for j in range(k)]
+    return layers
+
+
+def generate_layer(img, depth, intervals, j):
+   return torch.where(torch.logical_and(intervals[j] <= depth, depth <= intervals[j + 1]), img, torch.zeros_like(img))
+
+
+def generate_intervals(depths, k):
+    return [generate_interval(depth, k) for depth in depths]
+
+
+def generate_interval(depth, k):
+    depths = torch.unique(depth)
+    depths = depths[depths < 1]
+    min_d = torch.min(depths)
+    max_d = torch.max(depths)
+    eps = (max_d - min_d) / k
+    return [min_d + i * eps for i in range(k+1)]
+
+
 def init_weights(m):
     if type(m) == torch.nn.Conv2d or type(m) == torch.nn.Conv3d or \
             type(m) == torch.nn.ConvTranspose2d or type(m) == torch.nn.ConvTranspose3d:

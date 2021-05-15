@@ -7,6 +7,7 @@
 # - https://github.com/kanezaki/pytorch-unsupervised-segmentation-tip/blob/master/demo.py
 #
 
+from general import generate_intervals, generate_layers, generate_surfaces
 import torch
 import torch.nn as nn
 
@@ -118,21 +119,28 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes=10, num_layers=2):
+    def __init__(self, num_classes=10, num_layers=5):
         super().__init__()
         self.feature = UNetFeature()
         self.predict = UNetFCN(out_channels=num_classes)
         self.num_layers = num_layers
 
     def forward(self, imgs, depths):
-        m = depths.max()
-        eps = m / self.num_layers
-        intervals = [i * eps for i in range(self.num_layers)] + [m]
-        intervals_len = len(intervals)
+        layers = generate_layers(imgs, depths, self.num_layers)
+        # layers = torch.stack(layers, dim=-1)
+        # print(layers.shape)
 
-        imgs = [torch.where(torch.logical_and(intervals[i] < depths, depths <= intervals[i + 1]), imgs, torch.zeros_like(imgs)) for i in range(intervals_len - 1)]
+        # import matplotlib.pyplot as plt
+        # _, ax = plt.subplots(1, self.num_layers + 1)
+        # for i in range(self.num_layers):
+        #     ax[i].axis('off')
+        #     ax[i].imshow(layers[0, :, :, :, i].permute(1, 2, 0))
+        # ax[-1].axis('off')
+        # ax[-1].imshow(imgs[0].permute(1, 2, 0))
+        # plt.show()
+        # exit()
 
-        features = [self.feature(img) for img in imgs]
+        features = [self.feature(layer) for layer in layers]
         x = [self.predict(*x) for x in features]
         return torch.stack(x, dim=-1)
 
@@ -164,21 +172,24 @@ class SurfaceLoss(nn.Module):
 
     def forward(self, predictions, normals, depths):
         num_layers = predictions.shape[-1]
-        m = depths.max()
-        eps = m / num_layers
-        intervals = [i * eps for i in range(num_layers)] + [m]
-        intervals_len = len(intervals)
-
-        _, target = torch.max(predictions, 1)
+        _, targets = torch.max(predictions, 1)
         depths = depths.squeeze(1)
 
-        surfaces = (torch.abs(normals) >= self.eps)
-        surfaces = torch.logical_or(surfaces[:, 0, :, :], torch.logical_or(surfaces[:, 1, :, :], surfaces[:, 2, :, :])).long()
-        surfaces = [torch.where(torch.logical_and(intervals[i] < depths, depths <= intervals[i + 1]), surfaces, torch.zeros_like(surfaces)) for i in range(intervals_len - 1)]
-        surfaces = torch.stack(surfaces, dim=-1)
-        surfaces = surfaces * target
+        surfaces = generate_surfaces(normals)
+        layers = generate_layers(surfaces, depths, num_layers)
+        layers = torch.stack(layers, dim=-1) * targets
 
-        return self.loss(predictions, surfaces)
+        # import matplotlib.pyplot as plt
+        # _, ax = plt.subplots(1, num_layers + 1)
+        # for i in range(num_layers):
+        #     ax[i].axis('off')
+        #     ax[i].imshow(layers[0, :, :, i].unsqueeze(-1))
+        # ax[-1].axis('off')
+        # ax[-1].imshow(normals[0].permute(1, 2, 0))
+        # plt.show()
+        # exit()
+
+        return self.loss(predictions, layers)
 
 
 class LossFunction(nn.Module):
