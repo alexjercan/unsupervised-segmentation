@@ -127,19 +127,6 @@ class Model(nn.Module):
 
     def forward(self, imgs, depths):
         layers = generate_layers(imgs, depths, self.num_layers)
-        # layers = torch.stack(layers, dim=-1)
-        # print(layers.shape)
-
-        # import matplotlib.pyplot as plt
-        # _, ax = plt.subplots(1, self.num_layers + 1)
-        # for i in range(self.num_layers):
-        #     ax[i].axis('off')
-        #     ax[i].imshow(layers[0, :, :, :, i].permute(1, 2, 0))
-        # ax[-1].axis('off')
-        # ax[-1].imshow(imgs[0].permute(1, 2, 0))
-        # plt.show()
-        # exit()
-
         features = [self.feature(layer) for layer in layers]
         x = [self.predict(*x) for x in features]
         return torch.stack(x, dim=-1)
@@ -178,16 +165,6 @@ class SurfaceLoss(nn.Module):
         surfaces = generate_surfaces(normals)
         layers = generate_layers(surfaces, depths, num_layers)
         layers = torch.stack(layers, dim=-1) * targets
-
-        # import matplotlib.pyplot as plt
-        # _, ax = plt.subplots(1, num_layers + 1)
-        # for i in range(num_layers):
-        #     ax[i].axis('off')
-        #     ax[i].imshow(layers[0, :, :, i].unsqueeze(-1))
-        # ax[-1].axis('off')
-        # ax[-1].imshow(normals[0].permute(1, 2, 0))
-        # plt.show()
-        # exit()
 
         return self.loss(predictions, layers)
 
