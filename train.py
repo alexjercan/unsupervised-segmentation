@@ -28,8 +28,6 @@ def train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx):
     loop = tqdm(dataloader, position=0, leave=True)
 
     for i, tensors in enumerate(loop):
-        if i == 10:
-            break
         imgs, normals, depths = tensors_to_device(tensors, DEVICE)
 
         predictions = model(imgs, depths)

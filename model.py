@@ -7,7 +7,8 @@
 # - https://github.com/kanezaki/pytorch-unsupervised-segmentation-tip/blob/master/demo.py
 #
 
-from general import generate_intervals, generate_layers, generate_surfaces
+from util import plot_raw_surfaces
+from general import generate_layers, generate_surfaces
 import torch
 import torch.nn as nn
 
@@ -119,7 +120,7 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes=10, num_layers=9):
+    def __init__(self, num_classes=10, num_layers=3):
         super().__init__()
         self.feature = UNetFeature()
         self.predict = UNetFCN(out_channels=num_classes)
@@ -127,6 +128,7 @@ class Model(nn.Module):
 
     def forward(self, imgs, depths):
         layers = generate_layers(imgs, depths, self.num_layers)
+        # plot_raw_surfaces(imgs.permute(0, 2, 3, 1), torch.stack(layers, dim=-1))
         features = [self.feature(layer) for layer in layers]
         x = [self.predict(*x) for x in features]
         return torch.stack(x, dim=-1)

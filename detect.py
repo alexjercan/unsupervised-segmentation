@@ -5,7 +5,6 @@
 # References:
 #
 
-from albumentations.pytorch.transforms import ToTensorV2
 import cv2
 import torch
 import argparse

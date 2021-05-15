@@ -61,6 +61,18 @@ def exr2normal(path):
     return cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH) * 2 - 1
 
 
+def plot_raw_surfaces(imgs, surfaces):
+    num_layers = surfaces.shape[-1]
+    _, ax = plt.subplots(1, num_layers + 1)
+    for i in range(num_layers):
+        ax[i].axis('off')
+        ax[i].imshow(surfaces[0, :, :, :, i].permute(1, 2, 0))
+    ax[-1].axis('off')
+    ax[-1].imshow(imgs[0])
+    plt.show()
+    plt.close()
+
+
 label_colors = np.random.randint(255, size=(100, 3))
 
 
@@ -73,6 +85,7 @@ def plot_predictions(images, predictions, paths):
     canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
     for pred in predictions.permute(3, 0, 1, 2):
         canvas = torch.where(canvas == 0.0, pred, canvas)
+    # plot_raw_surfaces(images, predictions.unsqueeze(1))
     predictions = canvas.cpu().numpy()
 
     for img, pred, path in zip(images, predictions, paths):
