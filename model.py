@@ -121,7 +121,7 @@ class Model(nn.Module):
     def __init__(self, num_classes=10, num_layers=2):
         super().__init__()
         self.feature = UNetFeature()
-        self.predict = nn.ModuleList([UNetFCN(out_channels=num_classes) for _ in range(num_layers)])
+        self.predict = UNetFCN(out_channels=num_classes)
         self.num_layers = num_layers
 
     def forward(self, imgs, depths):
@@ -133,7 +133,7 @@ class Model(nn.Module):
         imgs = [torch.where(torch.logical_and(intervals[i] < depths, depths <= intervals[i + 1]), imgs, torch.zeros_like(imgs)) for i in range(intervals_len - 1)]
 
         features = [self.feature(img) for img in imgs]
-        x = [p(*x) for p, x in zip(self.predict, features)]
+        x = [self.predict(*x) for x in features]
         return torch.stack(x, dim=-1)
 
 
