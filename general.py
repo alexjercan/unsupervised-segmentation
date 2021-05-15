@@ -15,7 +15,7 @@ def tensors_to_device(tensors, device):
 
 def generate_surfaces(normals, eps=1e-8):
     surfaces = (torch.abs(normals) >= eps)
-    surfaces = torch.logical_or(surfaces[:, 0, :, :], torch.logical_or(surfaces[:, 1, :, :], surfaces[:, 2, :, :])).long()
+    surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :])).long()
     return surfaces
 
 

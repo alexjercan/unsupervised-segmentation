@@ -119,7 +119,7 @@ class UNetFCN(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes=10, num_layers=5):
+    def __init__(self, num_classes=10, num_layers=9):
         super().__init__()
         self.feature = UNetFeature()
         self.predict = UNetFCN(out_channels=num_classes)
@@ -160,12 +160,10 @@ class SurfaceLoss(nn.Module):
     def forward(self, predictions, normals, depths):
         num_layers = predictions.shape[-1]
         _, targets = torch.max(predictions, 1)
-        depths = depths.squeeze(1)
 
         surfaces = generate_surfaces(normals)
         layers = generate_layers(surfaces, depths, num_layers)
-        layers = torch.stack(layers, dim=-1) * targets
-
+        layers = torch.stack(layers, dim=-1).squeeze(1) * targets
         return self.loss(predictions, layers)
 
 
