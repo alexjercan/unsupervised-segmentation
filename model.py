@@ -182,10 +182,13 @@ class SurfaceLoss(nn.Module):
 
 
 class LossFunction(nn.Module):
-    def __init__(self):
+    def __init__(self, alpha=1.0, beta=1.0):
         super(LossFunction, self).__init__()
         self.c_loss = ContinuityLoss()
         self.s_loss = SurfaceLoss()
+
+        self.alpha = alpha
+        self.beta = beta
 
         self.c_loss_val = 0
         self.s_loss_val = 0
@@ -193,8 +196,8 @@ class LossFunction(nn.Module):
     def forward(self, predictions, data):
         (normals, depths) = data
 
-        c_loss = self.c_loss(predictions)
-        s_loss = self.s_loss(predictions, normals, depths) * 1.0
+        c_loss = self.c_loss(predictions) * self.alpha
+        s_loss = self.s_loss(predictions, normals, depths) * self.beta
 
         self.c_loss_val = c_loss.item()
         self.s_loss_val = s_loss.item()
