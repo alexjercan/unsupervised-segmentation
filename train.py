@@ -66,7 +66,7 @@ def train(config=None, config_test=None):
                 A.IAAEmboss(),
                 A.RandomBrightnessContrast(),
             ], p=0.3),
-            A.Normalize(mean=0, std=1),
+            A.Normalize(),
             M.MyToTensorV2(),
         ],
         additional_targets={

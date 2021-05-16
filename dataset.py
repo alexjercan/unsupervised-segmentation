@@ -140,7 +140,7 @@ if __name__ == "__main__":
                 A.IAAEmboss(),
                 A.RandomBrightnessContrast(),
             ], p=0.3),
-            A.Normalize(mean=0, std=1),
+            A.Normalize(),
             M.MyToTensorV2(),
         ],
         additional_targets={
@@ -151,9 +151,9 @@ if __name__ == "__main__":
 
     img_transform = A.Compose(
         [
-            A.LongestMaxSize(max_size=IMAGE_SIZE),
-            A.PadIfNeeded(min_height=IMAGE_SIZE, min_width=IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
-            A.Normalize(mean=0, std=1),
+            M.MyLongestMaxSize(max_size=IMAGE_SIZE),
+            M.MyPadIfNeeded(min_height=IMAGE_SIZE, min_width=IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
+            A.Normalize(),
             M.MyToTensorV2(),
         ],
         additional_targets={

@@ -39,7 +39,7 @@ def test(model=None, config=None):
 
     transform = A.Compose(
         [
-            A.Normalize(mean=0, std=1),
+            A.Normalize(),
             M.MyToTensorV2(),
         ],
         additional_targets={

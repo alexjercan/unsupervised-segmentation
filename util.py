@@ -9,6 +9,7 @@ import os
 import cv2
 import torch
 import numpy as np
+import albumentations as A
 import matplotlib.pyplot as plt
 
 from pathlib import Path
@@ -90,6 +91,10 @@ def plot_predictions(images, predictions, paths):
 
     for img, pred, path in zip(images, predictions, paths):
         rgb = np.array([label_colors[c % 100] for c in pred]).astype(np.float32) / 255
+        m = max(img.shape[:-1])
+        rgb = A.resize(rgb, width=m, height=m, interpolation=cv2.INTER_NEAREST)
+        rgb = A.center_crop(rgb, *img.shape[:-1])
+
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.suptitle(path)
         ax1.axis('off')
@@ -99,7 +104,7 @@ def plot_predictions(images, predictions, paths):
         plt.show()
 
 
-def save_predictions(predictions, paths):
+def save_predictions(images, predictions, paths):
     plt.rcParams['figure.figsize'] = [12, 8]
     plt.rcParams['figure.dpi'] = 200
 
@@ -110,10 +115,13 @@ def save_predictions(predictions, paths):
         canvas = torch.where(canvas == 0.0, pred, canvas)
     predictions = canvas.cpu().numpy()
 
-    for pred, path in zip(predictions, paths):
+    for img, pred, path in zip(images, predictions, paths):
         rgb = np.array([label_colors[c % 100] for c in pred]).astype(np.float32) / 255
-        pred_path = str(Path(path).with_suffix(".exr"))
+        m = max(img.shape[:-1])
+        rgb = A.resize(rgb, width=m, height=m, interpolation=cv2.INTER_NEAREST)
+        rgb = A.center_crop(rgb, *img.shape[:-1])
 
+        pred_path = str(Path(path).with_suffix(".exr"))
         cv2.imwrite(pred_path, rgb)
 
         plt.axis('off')

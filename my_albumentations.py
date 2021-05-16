@@ -47,6 +47,18 @@ class MyGridDistortion(A.GridDistortion):
         return dict(super().targets, **{'depth': self.apply_to_mask, 'normal': self.apply_to_mask})
 
 
+class MyLongestMaxSize(A.LongestMaxSize):
+    @property
+    def targets(self):
+        return dict(super().targets, **{'depth': self.apply_to_mask, 'normal': self.apply_to_mask})
+
+
+class MyPadIfNeeded(A.PadIfNeeded):
+    @property
+    def targets(self):
+        return dict(super().targets, **{'depth': self.apply_to_mask, 'normal': self.apply_to_mask})
+
+
 class MyToTensorV2(ToTensorV2):
     @property
     def targets(self):

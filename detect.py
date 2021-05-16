@@ -35,9 +35,9 @@ def detect(model=None, config=None):
 
     transform = A.Compose(
         [
-            A.LongestMaxSize(max_size=config.IMAGE_SIZE),
-            A.PadIfNeeded(min_height=config.IMAGE_SIZE, min_width=config.IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0),
-            A.Normalize(mean=0, std=1),
+            M.MyLongestMaxSize(max_size=config.IMAGE_SIZE),
+            M.MyPadIfNeeded(min_height=config.IMAGE_SIZE, min_width=config.IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT, value=0, mask_value=0),
+            A.Normalize(),
             M.MyToTensorV2(),
         ],
         additional_targets={
@@ -55,7 +55,7 @@ def detect(model=None, config=None):
     model.eval()
     for img, predictions, path in generatePredictions(model, dataset):
         plot_predictions([img], predictions, [path])
-        save_predictions(predictions, [path])
+        save_predictions([img], predictions, [path])
 
 
 if __name__ == "__main__":
