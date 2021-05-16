@@ -38,8 +38,8 @@ def generate_interval(depth, k):
     depths = torch.unique(depth)
     eps = 1e-3
     depths = depths[torch.logical_and(eps < depths, depths < 1.0 - eps)]
-    min_d = torch.min(depths)
-    max_d = torch.max(depths)
+    min_d = torch.min(depths) if depths.nelement() != 0 else 0.0
+    max_d = torch.max(depths) if depths.nelement() != 0 else 1.0
     eps = (max_d - min_d) / k
     return [min_d + i * eps for i in range(k+1)]
 
