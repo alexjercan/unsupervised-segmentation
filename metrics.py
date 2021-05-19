@@ -39,8 +39,8 @@ class MetricFunction():
 
     def show(self):
         error = self.error_avg
-        format_str = ('======SEGMENTATION========\nIOU=%.4f\tP=%.4f\tR=%.4f\n')
-        return format_str % (error['S_IOU'], error['S_P'], error['S_R'])
+        format_str = ('======SEGMENTATION========\nIOU=%.4f\tP=%.4f\tR=%.4f\tF1=%.4f\n')
+        return format_str % (error['S_IOU'], error['S_P'], error['S_R'], error['S_F1'])
 
 
 def evaluate_error_classification(predictions, targets):
@@ -58,6 +58,7 @@ def evaluate_error_classification(predictions, targets):
     error['S_IOU'] = intersection / union
     error['S_P'] = tp / (tp + fp)
     error['S_R'] = tp / (tp + fn)
+    error['S_F1'] = 2 * (error['S_P'] * error['S_R'] / (error['S_P'] + error['S_R']))
     return error
 
 
