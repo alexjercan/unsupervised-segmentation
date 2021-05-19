@@ -5,6 +5,7 @@
 # References:
 #
 
+from general import layers_to_canvas
 import os
 import cv2
 import torch
@@ -109,10 +110,7 @@ def save_predictions(images, predictions, paths):
     plt.rcParams['figure.dpi'] = 200
 
     _, predictions = torch.max(predictions, 1)
-    device = predictions.device
-    canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
-    for pred in predictions.permute(3, 0, 1, 2):
-        canvas = torch.where(canvas == 0.0, pred, canvas)
+    canvas = layers_to_canvas(predictions)
     predictions = canvas.cpu().numpy()
 
     for img, pred, path in zip(images, predictions, paths):

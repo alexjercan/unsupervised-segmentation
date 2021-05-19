@@ -13,6 +13,14 @@ def tensors_to_device(tensors, device):
     return (tensor.to(device, non_blocking=True) for tensor in tensors)
 
 
+def layers_to_canvas(layers):
+    device = layers.device
+    canvas = torch.zeros(layers.shape[:-1], dtype=torch.long, device=device)
+    for layer in layers.permute(3, 0, 1, 2):
+        canvas = torch.where(canvas == 0.0, layer, canvas)
+    return canvas
+
+
 def generate_surfaces(normals, eps=1e-8):
     surfaces = (torch.abs(normals) >= eps)
     surfaces = torch.logical_or(surfaces[:, 0:1, :, :], torch.logical_or(surfaces[:, 1:2, :, :], surfaces[:, 2:3, :, :])).long()

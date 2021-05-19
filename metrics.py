@@ -8,6 +8,10 @@
 #
 
 
+from general import generate_layers, generate_surfaces, layers_to_canvas
+import torch
+
+
 class MetricFunction():
     def __init__(self, batch_size) -> None:
         self.batch_size = batch_size
@@ -17,19 +21,43 @@ class MetricFunction():
 
     def evaluate(self, predictions, data):
         (normals, depths) = data
-        error_val = evaluate_error_classification(predictions, None)
+        num_layers = predictions.shape[-1]
+        _, predictions = torch.max(predictions, 1)
+
+        surfaces = generate_surfaces(normals)
+        layers = generate_layers(surfaces, depths, num_layers)
+        layers = torch.stack(layers, dim=-1).squeeze(1) * predictions
+
+        canvas = layers_to_canvas(predictions)
+        gt_canvas = layers_to_canvas(layers)
+
+        error_val = evaluate_error_classification(canvas, gt_canvas)
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)
         return self.error_avg
 
     def show(self):
-        return ""
+        error = self.error_avg
+        format_str = ('======SEGMENTATION========\nIOU=%.4f\tP=%.4f\tR=%.4f\n')
+        return format_str % (error['S_IOU'], error['S_P'], error['S_R'])
 
 
 def evaluate_error_classification(predictions, targets):
     error = {}
+    p_mask = (predictions > 0).float()
+    gt_mask = (targets > 0).float()
 
+    intersection = torch.sum(p_mask * gt_mask)
+    union = torch.sum(torch.clamp(p_mask + gt_mask, 0, 1))
+
+    tp = torch.logical_and(predictions > 0, predictions == targets).float().sum()
+    fp = torch.logical_and(predictions > 0, targets == 0).float().sum()
+    fn = torch.logical_and(predictions == 0, targets > 0).float().sum()
+
+    error['S_IOU'] = intersection / union
+    error['S_P'] = tp / (tp + fp)
+    error['S_R'] = tp / (tp + fn)
     return error
 
 
