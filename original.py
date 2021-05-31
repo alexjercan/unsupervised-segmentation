@@ -85,7 +85,7 @@ def og_train_one_epoch(model, dataloader, loss_fn, metric_fn, solver, epoch_idx)
     loop.close()
 
 
-def run_test(model, dataloader, loss_fn, metric_fn):
+def og_run_test(model, dataloader, loss_fn, metric_fn):
     loop = tqdm(dataloader, position=0, leave=True)
 
     for _, tensors in enumerate(loop):
@@ -127,5 +127,5 @@ def run_all(train_dataloader, test_dataloader, LEARNING_RATE, WEIGHT_DECAY, MILE
 
     model.eval()
     metric_fn = MetricFunction(BATCH_SIZE)
-    run_test(model, test_dataloader, loss_fn, metric_fn)
+    og_run_test(model, test_dataloader, loss_fn, metric_fn)
     print_single_error(epoch_idx, loss_fn.show(), metric_fn.show())
