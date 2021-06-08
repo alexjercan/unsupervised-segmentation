@@ -129,3 +129,11 @@ def run_all(train_dataloader, test_dataloader, LEARNING_RATE, WEIGHT_DECAY, MILE
     metric_fn = MetricFunction(BATCH_SIZE)
     og_run_test(model, test_dataloader, loss_fn, metric_fn)
     print_single_error(epoch_idx, loss_fn.show(), metric_fn.show())
+
+if __name__ == "__main__":
+    img = torch.rand((4, 3, 256, 256))
+    model = OgModel(num_classes=10)
+    pred = model(img)
+    assert pred.shape == (4, 10, 256, 256), f"Model {pred.shape}"
+
+    print("model ok")
