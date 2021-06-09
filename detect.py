@@ -25,7 +25,7 @@ def generatePredictions(model, dataset):
             depth = depth.to(DEVICE, non_blocking=True).unsqueeze(0)
 
             predictions = model(img, depth)
-            yield og_img, predictions, path
+            yield og_img, predictions, depth, path
 
 
 def detect(model=None, config=None):
@@ -53,9 +53,9 @@ def detect(model=None, config=None):
         _, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
     model.eval()
-    for img, predictions, path in generatePredictions(model, dataset):
-        plot_predictions([img], predictions, [path])
-        save_predictions([img], predictions, [path])
+    for img, predictions, depths, path in generatePredictions(model, dataset):
+        plot_predictions([img], predictions, depths, [path])
+        save_predictions([img], predictions, depths, [path])
 
 
 if __name__ == "__main__":

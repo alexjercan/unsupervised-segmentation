@@ -5,7 +5,7 @@
 # References:
 #
 
-from general import layers_to_canvas
+from general import layers_to_canvas, squash_layers
 import os
 import cv2
 import torch
@@ -78,16 +78,17 @@ def plot_raw_surfaces(imgs, surfaces):
 label_colors = np.random.randint(255, size=(100, 3))
 
 
-def plot_predictions(images, predictions, paths):
+def plot_predictions(images, predictions, depths, paths):
     plt.rcParams['figure.figsize'] = [12, 8]
     plt.rcParams['figure.dpi'] = 200
 
     _, predictions = torch.max(predictions, 1)
     device = predictions.device
     canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
-    for pred in predictions.permute(3, 0, 1, 2):
+    predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
+    for pred in predictions.permute(1, 0, 2, 3):
         canvas = torch.where(canvas == 0.0, pred, canvas)
-    # plot_raw_surfaces(images, predictions.unsqueeze(1))
+    # plot_raw_surfaces(images, predictions.permute(0, 2, 3, 1).unsqueeze(1))
     predictions = canvas.cpu().numpy()
 
     for img, pred, path in zip(images, predictions, paths):
@@ -105,7 +106,7 @@ def plot_predictions(images, predictions, paths):
         plt.show()
 
 
-def save_predictions(images, predictions, paths):
+def save_predictions(images, predictions, depths, paths):
     plt.rcParams['figure.figsize'] = [12, 8]
     plt.rcParams['figure.dpi'] = 200
 

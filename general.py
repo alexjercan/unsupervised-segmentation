@@ -27,6 +27,16 @@ def generate_surfaces(normals, eps=1e-8):
     return surfaces
 
 
+def squash_layers(layers, depths, k):
+    bs = layers.shape[0]
+    intervals = generate_intervals(depths, k)
+    return [squash_image(layers[i], depths[i], intervals[i], k) for i in range(bs)]
+
+
+def squash_image(layers, depth, interval, k):
+    return torch.stack([generate_layer(layers[:, :, i], depth.squeeze(0), interval, i) for i in range(k)])
+
+
 def generate_layers(imgs, depths, k):
     bs = imgs.shape[0]
     intervals = generate_intervals(depths, k)
