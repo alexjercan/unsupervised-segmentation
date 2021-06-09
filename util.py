@@ -87,7 +87,7 @@ def plot_predictions(images, predictions, depths, paths):
     canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
     predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
     for pred in predictions.permute(1, 0, 2, 3):
-        canvas = torch.where(canvas == 0.0, pred, canvas)
+        canvas = torch.where(pred != -1, pred, canvas)
     # plot_raw_surfaces(images, predictions.permute(0, 2, 3, 1).unsqueeze(1))
     predictions = canvas.cpu().numpy()
 
