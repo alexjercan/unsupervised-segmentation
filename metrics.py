@@ -55,7 +55,7 @@ class MetricFunctionNYUv2():
         num_layers = predictions.shape[-1]
         _, predictions = torch.max(predictions, 1)
 
-        error_val = evaluate_error_classification(predictions, seg13)
+        error_val = evaluate_error_classification(predictions, seg13.permute(0, 2, 3, 1))
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)
