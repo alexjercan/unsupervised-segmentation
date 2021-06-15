@@ -28,15 +28,15 @@ class MetricFunction():
         layers = generate_layers(surfaces, depths, num_layers)
         layers = torch.stack(layers, dim=-1).squeeze(1) * predictions
 
-        gt_canvas = layers_to_canvas(layers)
+        # gt_canvas = layers_to_canvas(layers)
 
-        device = predictions.device
-        canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
-        predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
-        for pred in predictions.permute(1, 0, 2, 3):
-            canvas = torch.where(pred != -1, pred, canvas)
+        # device = predictions.device
+        # canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
+        # predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
+        # for pred in predictions.permute(1, 0, 2, 3):
+        #     canvas = torch.where(pred != -1, pred, canvas)
 
-        error_val = evaluate_error_classification(canvas, gt_canvas)
+        error_val = evaluate_error_classification(predictions, layers)
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)

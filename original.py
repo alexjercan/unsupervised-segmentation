@@ -12,22 +12,19 @@ import torch.optim
 from config import DEVICE
 from general import init_weights, load_checkpoint
 from metrics import MetricFunction, print_single_error
-from test import run_test
 import torch.nn as nn
 from tqdm import tqdm
-from model import UNetFeature, UNetFCN
+from model import ModelSmallBlock
 from general import tensors_to_device
 
 
 class OgModel(nn.Module):
     def __init__(self, num_classes=10):
         super().__init__()
-        self.feature = UNetFeature()
-        self.predict = UNetFCN(out_channels=num_classes)
+        self.predict = ModelSmallBlock(num_classes)
 
     def forward(self, imgs):
-        features = self.feature(imgs)
-        pred = self.predict(*features)
+        pred = self.predict(imgs)
         return pred
 
 

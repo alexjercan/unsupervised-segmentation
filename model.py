@@ -8,6 +8,7 @@
 #
 
 from util import plot_raw_surfaces
+import torch.nn.functional as F
 from general import generate_layers, generate_surfaces
 import torch
 import torch.nn as nn
@@ -131,6 +132,46 @@ class Model(nn.Module):
         # plot_raw_surfaces(imgs.permute(0, 2, 3, 1), torch.stack(layers, dim=-1))
         features = [self.feature(layer) for layer in layers]
         x = [self.predict(*x) for x in features]
+        return torch.stack(x, dim=-1)
+
+
+class ModelSmallBlock(nn.Module):
+    def __init__(self, nChannel):
+        self.nConv = 3
+        super(ModelSmallBlock, self).__init__()
+        self.conv1 = nn.Conv2d(3, nChannel, kernel_size=3, stride=1, padding=1 )
+        self.bn1 = nn.BatchNorm2d(nChannel)
+        self.conv2 = nn.ModuleList()
+        self.bn2 = nn.ModuleList()
+        for i in range(self.nConv-1):
+            self.conv2.append( nn.Conv2d(nChannel, nChannel, kernel_size=3, stride=1, padding=1 ) )
+            self.bn2.append( nn.BatchNorm2d(nChannel) )
+        self.conv3 = nn.Conv2d(nChannel, nChannel, kernel_size=1, stride=1, padding=0 )
+        self.bn3 = nn.BatchNorm2d(nChannel)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu( x )
+        x = self.bn1(x)
+        for i in range(self.nConv-1):
+            x = self.conv2[i](x)
+            x = F.relu( x )
+            x = self.bn2[i](x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        return x
+
+
+class ModelSmall(nn.Module):
+    def __init__(self, num_classes=10, num_layers=3):
+        super().__init__()
+        self.predict = ModelSmallBlock(num_classes)
+        self.num_layers = num_layers
+
+    def forward(self, imgs, depths):
+        layers = generate_layers(imgs, depths, self.num_layers)
+        # plot_raw_surfaces(imgs.permute(0, 2, 3, 1), torch.stack(layers, dim=-1))
+        x = [self.predict(x) for x in layers]
         return torch.stack(x, dim=-1)
 
 

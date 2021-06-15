@@ -18,7 +18,7 @@ import my_albumentations as M
 from tqdm import tqdm
 from config import parse_test_config, parse_train_config, DEVICE, read_yaml_config
 from datetime import datetime as dt
-from model import Model, LossFunction
+from model import Model, LossFunction, ModelSmall
 from test import test
 from general import tensors_to_device, save_checkpoint, load_checkpoint
 from dataset import create_dataloader
@@ -79,7 +79,8 @@ def train(config=None, config_test=None):
                                       batch_size=config.BATCH_SIZE, transform=transform,
                                       workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
 
-    model = Model()
+    # model = Model()
+    model = ModelSmall()
     solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                               lr=config.LEARNING_RATE, betas=config.BETAS,
                               eps=config.EPS, weight_decay=config.WEIGHT_DECAY)
