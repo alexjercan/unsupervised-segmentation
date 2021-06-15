@@ -25,7 +25,7 @@ def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, wor
 
 
 def create_dataloader_nyuv2(batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
-    t = transforms.Compose([transforms.Resize(256), transforms.ToTensor()])
+    t = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     dataset = NYUv2(root="../NYUv2", download=True,
         rgb_transform=t, seg_transform=t, sn_transform=t, depth_transform=t)
     batch_size = min(batch_size, len(dataset))

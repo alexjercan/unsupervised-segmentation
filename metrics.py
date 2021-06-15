@@ -8,7 +8,7 @@
 #
 
 
-from general import generate_layers, generate_surfaces, layers_to_canvas
+from general import generate_layers, generate_surfaces, layers_to_canvas, squash_layers
 import torch
 
 
@@ -28,8 +28,13 @@ class MetricFunction():
         layers = generate_layers(surfaces, depths, num_layers)
         layers = torch.stack(layers, dim=-1).squeeze(1) * predictions
 
-        canvas = layers_to_canvas(predictions)
         gt_canvas = layers_to_canvas(layers)
+
+        device = predictions.device
+        canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
+        predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
+        for pred in predictions.permute(1, 0, 2, 3):
+            canvas = torch.where(pred != -1, pred, canvas)
 
         error_val = evaluate_error_classification(canvas, gt_canvas)
 
@@ -51,11 +56,17 @@ class MetricFunctionNYUv2():
         self.error_avg = {}
 
     def evaluate(self, predictions, data):
-        (seg13, depths) = data
+        (seg13, normals, depths) = data
         num_layers = predictions.shape[-1]
         _, predictions = torch.max(predictions, 1)
 
-        error_val = evaluate_error_classification(predictions, seg13.permute(0, 2, 3, 1))
+        device = predictions.device
+        canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
+        predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
+        for pred in predictions.permute(1, 0, 2, 3):
+            canvas = torch.where(pred != -1, pred, canvas)
+
+        error_val = evaluate_error_classification(canvas.unsqueeze(1), seg13.permute(0, 2, 3, 1))
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)
@@ -80,10 +91,10 @@ def evaluate_error_classification(predictions, targets):
     fp = torch.logical_and(predictions > 0, targets == 0).float().sum()
     fn = torch.logical_and(predictions == 0, targets > 0).float().sum()
 
-    error['S_IOU'] = intersection / union
-    error['S_P'] = tp / (tp + fp)
-    error['S_R'] = tp / (tp + fn)
-    error['S_F1'] = 2 * (error['S_P'] * error['S_R'] / (error['S_P'] + error['S_R']))
+    error['S_IOU'] = intersection / union if union != 0 else 0
+    error['S_P'] = tp / (tp + fp) if (tp + fp) != 0 else 0
+    error['S_R'] = tp / (tp + fn) if (tp + fn) != 0 else 0
+    error['S_F1'] = 2 * (error['S_P'] * error['S_R'] / (error['S_P'] + error['S_R'])) if (error['S_P'] + error['S_R']) != 0 else 0
     return error
 
 

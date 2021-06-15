@@ -5,6 +5,7 @@
 # References:
 #
 
+from util import plot_predictions
 import torch
 import argparse
 import albumentations as A
@@ -34,13 +35,14 @@ def run_test(model, dataloader, loss_fn, metric_fn):
 def run_test_nyuv2(model, dataloader, loss_fn, metric_fn):
     loop = tqdm(dataloader, position=0, leave=True)
 
-    for _, tensors in enumerate(loop):
+    for i, tensors in enumerate(loop):
         imgs, seg13, normals, depths = tensors_to_device(tensors, DEVICE)
         with torch.no_grad():
             predictions = model(imgs, depths)
 
             loss_fn(predictions, (normals, depths))
-            metric_fn.evaluate(predictions, (seg13, depths))
+            metric_fn.evaluate(predictions, (seg13, normals, depths))
+            if i == 5: break
     loop.close()
 
 
