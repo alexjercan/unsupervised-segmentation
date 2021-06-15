@@ -98,6 +98,19 @@ def og_run_test(model, dataloader, loss_fn, metric_fn):
     loop.close()
 
 
+def og_run_test_nyuv2(model, dataloader, loss_fn, metric_fn):
+    loop = tqdm(dataloader, position=0, leave=True)
+
+    for _, tensors in enumerate(loop):
+        imgs, seg13, normals, depths = tensors_to_device(tensors, DEVICE)
+        with torch.no_grad():
+            predictions = model(imgs)
+
+            loss_fn(predictions)
+            metric_fn.evaluate(predictions.unsqueeze(-1), (seg13, normals, depths))
+    loop.close()
+
+
 def run_all(train_dataloader, test_dataloader, LEARNING_RATE, WEIGHT_DECAY, MILESTONES, GAMMA, LOAD_TRAIN_MODEL, CHECKPOINT_TRAIN_FILE, CHECKPOINT_TEST_FILE, NUM_EPOCHS, BATCH_SIZE, LOAD_TEST_MODEL):
     model = OgModel(num_classes=10)
     model.apply(init_weights)
