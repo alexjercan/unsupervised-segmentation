@@ -42,7 +42,6 @@ def run_test_nyuv2(model, dataloader, loss_fn, metric_fn):
 
             loss_fn(predictions, (normals, depths))
             metric_fn.evaluate(predictions, (seg13, normals, depths))
-            if i == 5: break
     loop.close()
 
 
