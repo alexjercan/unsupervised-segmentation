@@ -12,10 +12,22 @@ import cv2
 
 from torch.utils.data import Dataset, DataLoader
 from util import load_depth, load_image, load_normal
+from nyuv2 import NYUv2
+from torchvision import transforms
 
 
 def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
     dataset = BDataset(dataset_root, json_path, transform=transform)
+    batch_size = min(batch_size, len(dataset))
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, workers])
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=nw, pin_memory=pin_memory, shuffle=shuffle)
+    return dataset, dataloader
+
+
+def create_dataloader_nyuv2(batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
+    t = transforms.Compose([transforms.RandomCrop(400), transforms.ToTensor()])
+    dataset = NYUv2(root="../NYUv2", download=True,
+        rgb_transform=t, seg_transform=t, sn_transform=t, depth_transform=t)
     batch_size = min(batch_size, len(dataset))
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, workers])
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=nw, pin_memory=pin_memory, shuffle=shuffle)

@@ -11,11 +11,11 @@ import albumentations as A
 import my_albumentations as M
 
 from tqdm import tqdm
-from metrics import MetricFunction, print_single_error
+from metrics import MetricFunction, MetricFunctionNYUv2, print_single_error
 from config import parse_test_config, DEVICE, read_yaml_config
 from model import Model, LossFunction
 from general import load_checkpoint, tensors_to_device
-from dataset import create_dataloader
+from dataset import create_dataloader, create_dataloader_nyuv2
 
 
 def run_test(model, dataloader, loss_fn, metric_fn):
@@ -29,6 +29,41 @@ def run_test(model, dataloader, loss_fn, metric_fn):
             loss_fn(predictions, (normals, depths))
             metric_fn.evaluate(predictions, (normals, depths))
     loop.close()
+
+
+def run_test_nyuv2(model, dataloader, loss_fn, metric_fn):
+    loop = tqdm(dataloader, position=0, leave=True)
+
+    for _, tensors in enumerate(loop):
+        imgs, seg13, normals, depths = tensors_to_device(tensors, DEVICE)
+        with torch.no_grad():
+            predictions = model(imgs, depths)
+
+            loss_fn(predictions, (normals, depths))
+            metric_fn.evaluate(predictions, (seg13, depths))
+    loop.close()
+
+
+def test_nyuv2(model=None, config=None):
+    epoch = 0
+    torch.backends.cudnn.benchmark = True
+
+    config = parse_test_config() if not config else config
+
+    _, dataloader = create_dataloader_nyuv2(batch_size=config.BATCH_SIZE)
+
+    if not model:
+        model = Model()
+        model = model.to(DEVICE)
+        epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+
+    loss_fn = LossFunction()
+    metric_fn = MetricFunctionNYUv2(config.BATCH_SIZE)
+
+    model.eval()
+    run_test_nyuv2(model, dataloader, loss_fn, metric_fn)
+    print_single_error(epoch, loss_fn.show(), metric_fn.show())
+
 
 
 def test(model=None, config=None):
@@ -72,4 +107,5 @@ if __name__ == "__main__":
 
     config_test = parse_test_config(read_yaml_config(opt.test))
 
-    test(config=config_test)
+    # test(config=config_test)
+    test_nyuv2(config=config_test)
