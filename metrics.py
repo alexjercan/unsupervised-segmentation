@@ -28,13 +28,8 @@ class MetricFunction():
         layers = generate_layers(surfaces, depths, num_layers)
         layers = torch.stack(layers, dim=-1).squeeze(1) * predictions
 
-        # gt_canvas = layers_to_canvas(layers)
-
-        # device = predictions.device
-        # canvas = torch.zeros(predictions.shape[:-1], dtype=torch.long, device=device)
-        # predictions = torch.stack(squash_layers(predictions, depths, predictions.shape[-1]))
-        # for pred in predictions.permute(1, 0, 2, 3):
-        #     canvas = torch.where(pred != -1, pred, canvas)
+        predictions = torch.clamp(predictions, 0, 1)
+        layers = torch.clamp(layers, 0, 1)
 
         error_val = evaluate_error_classification(predictions, layers)
 
@@ -66,7 +61,10 @@ class MetricFunctionNYUv2():
         for pred in predictions.permute(1, 0, 2, 3):
             canvas = torch.where(pred != -1, pred, canvas)
 
-        error_val = evaluate_error_classification(canvas.unsqueeze(1), seg13.permute(0, 2, 3, 1))
+        canvas_p = torch.clamp(canvas, 0, 1)
+        seg13_p = torch.clamp(seg13, 0, 1)
+
+        error_val = evaluate_error_classification(canvas_p.unsqueeze(1), seg13_p.permute(0, 2, 3, 1))
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)
@@ -81,11 +79,9 @@ class MetricFunctionNYUv2():
 
 def evaluate_error_classification(predictions, targets):
     error = {}
-    p_mask = (predictions > 0).float()
-    gt_mask = (targets > 0).float()
 
-    intersection = torch.sum(p_mask * gt_mask)
-    union = torch.sum(torch.clamp(p_mask + gt_mask, 0, 1))
+    intersection = torch.sum(predictions * targets)
+    union = torch.sum(torch.clamp(predictions + targets, 0, 1))
 
     tp = torch.logical_and(predictions > 0, predictions == targets).float().sum()
     fp = torch.logical_and(predictions > 0, targets == 0).float().sum()

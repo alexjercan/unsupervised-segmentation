@@ -12,7 +12,7 @@ import albumentations as A
 import my_albumentations as M
 
 from config import parse_detect_config, DEVICE, read_yaml_config
-from model import Model
+from model import Model, ModelSmall
 from util import plot_predictions, save_predictions
 from general import load_checkpoint
 from dataset import LoadImages
@@ -48,7 +48,8 @@ def detect(model=None, config=None):
     dataset = LoadImages(config.JSON, transform=transform)
 
     if not model:
-        model = Model()
+        # model = Model()
+        model = ModelSmall()
         model = model.to(DEVICE)
         _, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
