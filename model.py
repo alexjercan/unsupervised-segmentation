@@ -8,6 +8,7 @@
 #
 
 from util import plot_raw_surfaces
+from config import DEVICE
 import torch.nn.functional as F
 from general import generate_layers, generate_surfaces
 import torch
@@ -242,7 +243,13 @@ if __name__ == "__main__":
     img = torch.rand((4, 3, 256, 256))
     depth = torch.rand((4, 1, 256, 256))
     model = Model(num_classes=10, num_layers=2)
+
+    model = model.to(DEVICE)
+    img = img.to(DEVICE)
+    depth = depth.to(DEVICE)
+
     pred = model(img, depth)
+    pred = pred.cpu()
     assert pred.shape == (4, 10, 256, 256, 2), f"Model {pred.shape}"
 
     print("model ok")
