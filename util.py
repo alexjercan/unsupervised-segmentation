@@ -65,6 +65,8 @@ def exr2normal(path):
 
 def plot_raw_surfaces(imgs, surfaces):
     num_layers = surfaces.shape[-1]
+    surfaces = (surfaces - torch.min(surfaces))
+    surfaces = surfaces / torch.max(surfaces)
     _, ax = plt.subplots(1, num_layers + 1)
     for i in range(num_layers):
         ax[i].axis('off')
@@ -75,6 +77,7 @@ def plot_raw_surfaces(imgs, surfaces):
     plt.close()
 
 
+np.random.seed(42)
 label_colors = np.random.randint(255, size=(100, 3))
 
 
@@ -107,8 +110,10 @@ def plot_predictions(images, predictions, depths, paths):
 
 
 def save_predictions(images, predictions, depths, paths):
-    plt.rcParams['figure.figsize'] = [12, 8]
+    # plt.rcParams['figure.figsize'] = [12, 8]
+    plt.axis('off')
     plt.rcParams['figure.dpi'] = 200
+    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
     _, predictions = torch.max(predictions, 1)
     canvas = layers_to_canvas(predictions)
@@ -120,10 +125,9 @@ def save_predictions(images, predictions, depths, paths):
         rgb = A.resize(rgb, width=m, height=m, interpolation=cv2.INTER_NEAREST)
         rgb = A.center_crop(rgb, *img.shape[:-1])
 
-        pred_path = str(Path(path).with_suffix(".exr"))
-        cv2.imwrite(pred_path, rgb)
+        pred_path = str(Path(path).with_suffix(".png"))
+        cv2.imwrite(pred_path, cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
-        plt.axis('off')
-        plt.imshow(rgb)
-        plt.savefig(str(Path(path).with_suffix(".png")))
-        plt.close();
+        # plt.imshow(rgb)
+        # plt.savefig(str(Path(path).with_suffix(".png")))
+        # plt.close();

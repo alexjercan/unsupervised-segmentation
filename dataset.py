@@ -7,6 +7,7 @@
 
 import os
 import json
+import glob
 from copy import copy
 import cv2
 
@@ -24,10 +25,10 @@ def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, wor
     return dataset, dataloader
 
 
-def create_dataloader_nyuv2(batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
+def create_dataloader_nyuv2(batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True, train=False):
     t = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     dataset = NYUv2(root="../NYUv2", download=True,
-        rgb_transform=t, seg_transform=t, sn_transform=t, depth_transform=t)
+        rgb_transform=t, seg_transform=t, sn_transform=t, depth_transform=t, train=train)
     batch_size = min(batch_size, len(dataset))
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, workers])
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=nw, pin_memory=pin_memory, shuffle=shuffle)
@@ -119,6 +120,55 @@ class LoadImages():
             depth = augmentations["depth"]
 
         return og_img, img, depth, output_path
+
+
+class LoadAnimation():
+    def __init__(self, anim_root, transform=None):
+        self.transform = transform
+        self.imgs = glob.glob(os.path.join(anim_root, "image", "*.png"))
+        self.depths = glob.glob(os.path.join(anim_root, "depth", "*.exr"))
+        self.out_imgs = list(map(lambda path: path.replace(anim_root.split(os.sep)[-1], "anim-seg"), self.imgs))
+        self.count = 0
+
+    def __len__(self):
+        return len(self.out_imgs)
+
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    def __next__(self):
+        index = self.count
+
+        if self.count == self.__len__():
+            raise StopIteration
+        self.count += 1
+
+        data = self.__load__(index)
+        data =  self.__transform__(data)
+        return data
+
+    def __load__(self, index):
+        img_path = self.imgs[index]
+        depth_path = self.depths[index]
+        output_img_path = self.out_imgs[index]
+
+        img = load_image(img_path)
+        depth = load_depth(depth_path)
+
+        return img, depth, output_img_path
+
+    def __transform__(self, data):
+        img, depth, output_path = data
+        og_img = copy(img)
+
+        if self.transform is not None:
+            augmentations = self.transform(image=img, depth=depth)
+            img = augmentations["image"]
+            depth = augmentations["depth"]
+
+        return og_img, img, depth, output_path
+
 
 
 if __name__ == "__main__":

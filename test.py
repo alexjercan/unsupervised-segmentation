@@ -15,6 +15,7 @@ from tqdm import tqdm
 from metrics import MetricFunction, MetricFunctionNYUv2, print_single_error
 from config import parse_test_config, DEVICE, read_yaml_config
 from model import Model, LossFunction, ModelSmall
+from original import og_run_test_nyuv2, OgModel, OgLossFunction
 from general import load_checkpoint, tensors_to_device
 from dataset import create_dataloader, create_dataloader_nyuv2
 
@@ -54,16 +55,19 @@ def test_nyuv2(model=None, config=None):
     _, dataloader = create_dataloader_nyuv2(batch_size=config.BATCH_SIZE)
 
     if not model:
+        # model = OgModel()
         # model = Model()
         model = ModelSmall()
         model = model.to(DEVICE)
-        epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+        # epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
     loss_fn = LossFunction()
+    # loss_fn = OgLossFunction()
     metric_fn = MetricFunctionNYUv2(config.BATCH_SIZE)
 
     model.eval()
     run_test_nyuv2(model, dataloader, loss_fn, metric_fn)
+    # og_run_test_nyuv2(model, dataloader, loss_fn, metric_fn)
     print_single_error(epoch, loss_fn.show(), metric_fn.show())
 
 
