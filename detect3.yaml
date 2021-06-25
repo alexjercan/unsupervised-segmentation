@@ -1,0 +1,9 @@
+JSON:
+  [
+    { "image": "data/3/0000.png", "depth": "data/3/0000.exr", "output": "data/3/out/0000.png" },
+    { "image": "data/3/0001.png", "depth": "data/3/0001.exr", "output": "data/3/out/0001.png" },
+    { "image": "data/3/0002.png", "depth": "data/3/0002.exr", "output": "data/3/out/0002.png" },
+    { "image": "data/3/0003.png", "depth": "data/3/0003.exr", "output": "data/3/out/0003.png" },
+  ]
+IMAGE_SIZE: 512
+CHECKPOINT_FILE: "25sup.pth"

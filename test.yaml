@@ -1,6 +1,6 @@
 DATASET_ROOT: "../bdataset_scene"
 JSON_PATH: "test.json"
-BATCH_SIZE: 4
+BATCH_SIZE: 1
 IMAGE_SIZE: 256
 WORKERS: 8
 PIN_MEMORY: True
@@ -8,4 +8,4 @@ SHUFFLE: True
 
 OUT_PATH: "./runs"
 LOAD_MODEL: True
-CHECKPOINT_FILE: "normal.pth"
+CHECKPOINT_FILE: "simple.pth"

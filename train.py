@@ -70,7 +70,7 @@ def train_nyuv2(config=None, config_test=None):
     _, dataloader = create_dataloader_nyuv2(batch_size=config.BATCH_SIZE, train=True)
 
     # model = Model()
-    model = ModelSmall()
+    model = ModelSmall(num_classes=13)
     solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                               lr=config.LEARNING_RATE, betas=config.BETAS,
                               eps=config.EPS, weight_decay=config.WEIGHT_DECAY)

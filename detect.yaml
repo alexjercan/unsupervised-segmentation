@@ -3,6 +3,13 @@ JSON:
     { "image": "data/0000.png", "depth": "data/0000.exr", "output": "data/out/0000.png" },
     { "image": "data/0001.png", "depth": "data/0001.exr", "output": "data/out/0001.png" },
     { "image": "data/0002.png", "depth": "data/0002.exr", "output": "data/out/0002.png" },
+    { "image": "data/0003.png", "depth": "data/0003.exr", "output": "data/out/0003.png" },
+    { "image": "data/0004.png", "depth": "data/0004.exr", "output": "data/out/0004.png" },
+    { "image": "data/0005.png", "depth": "data/0005.exr", "output": "data/out/0005.png" },
+    { "image": "data/0006.png", "depth": "data/0006.exr", "output": "data/out/0006.png" },
+    { "image": "data/0007.png", "depth": "data/0007.exr", "output": "data/out/0007.png" },
+    { "image": "data/0008.png", "depth": "data/0008.exr", "output": "data/out/0008.png" },
+    { "image": "data/0009.png", "depth": "data/0009.exr", "output": "data/out/0009.png" },
   ]
-IMAGE_SIZE: 256
-CHECKPOINT_FILE: "normal.pth"
+IMAGE_SIZE: 512
+CHECKPOINT_FILE: "25sup.pth"
