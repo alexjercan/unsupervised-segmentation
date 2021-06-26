@@ -123,11 +123,11 @@ class LoadImages():
 
 
 class LoadAnimation():
-    def __init__(self, anim_root, transform=None):
+    def __init__(self, anim_root, transform=None, outname="anim-seg"):
         self.transform = transform
         self.imgs = glob.glob(os.path.join(anim_root, "image", "*.png"))
         self.depths = glob.glob(os.path.join(anim_root, "depth", "*.exr"))
-        self.out_imgs = list(map(lambda path: path.replace(anim_root.split(os.sep)[-1], "anim-seg"), self.imgs))
+        self.out_imgs = list(map(lambda path: path.replace(anim_root.split(os.sep)[-1], outname), self.imgs))
         self.count = 0
 
     def __len__(self):

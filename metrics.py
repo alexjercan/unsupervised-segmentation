@@ -50,6 +50,11 @@ class MetricFunctionNYUv2():
         self.error_sum = {}
         self.error_avg = {}
 
+        self.best_iou = 0
+        self.best_index = 0
+        self.index = 0
+        self.ious = []
+
     def evaluate(self, predictions, data):
         (seg13, normals, depths) = data
         num_layers = predictions.shape[-1]
@@ -65,6 +70,11 @@ class MetricFunctionNYUv2():
         seg13_p = torch.clamp(seg13, 0, 1)
 
         error_val = evaluate_error_classification(canvas_p.unsqueeze(1), seg13_p)
+        if error_val['S_IOU'] > self.best_iou:
+            self.best_iou = error_val['S_IOU']
+            self.best_index = self.index
+        self.ious.append(error_val['S_IOU'])
+        self.index = self.index + 1
 
         self.total_size += self.batch_size
         self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)

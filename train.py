@@ -5,6 +5,8 @@
 # References:
 #
 
+from torchvision.models.segmentation.fcn import FCNHead
+from torchvision.models.segmentation.segmentation import fcn_resnet50
 from metrics import MetricFunction, MetricFunctionNYUv2, print_single_error
 import os
 import re
@@ -19,8 +21,8 @@ from tqdm import tqdm
 from config import parse_test_config, parse_train_config, DEVICE, read_yaml_config
 from datetime import datetime as dt
 from model import Model, LossFunction, ModelSmall, SupervisedLossFunction
-from test import test, test_nyuv2
-from general import tensors_to_device, save_checkpoint, load_checkpoint
+from test import test, test_nyuv2, test_nyuv2_fcn
+from general import generate_layers, set_parameter_requires_grad, tensors_to_device, save_checkpoint, load_checkpoint
 from dataset import create_dataloader, create_dataloader_nyuv2
 
 
@@ -60,6 +62,75 @@ def train_one_epoch_nyuv2(model, dataloader, loss_fn, metric_fn, solver, epoch_i
 
         loop.set_postfix(loss=loss_fn.show(), epoch=epoch_index)
     loop.close()
+
+
+def train_one_epoch_nyuv2_fcn(model, dataloader, loss_fn, metric_fn, solver, epoch_index):
+    def runmodel(model, imgs, depths):
+        layers = generate_layers(imgs, depths, k=3)
+        x = [model(x)['out'] for x in layers]
+        return torch.stack(x, dim=-1)
+
+    loop = tqdm(dataloader, position=0, leave=True)
+
+    for i, tensors in enumerate(loop):
+        imgs, seg13, normals, depths = tensors_to_device(tensors, DEVICE)
+
+        predictions = runmodel(model, imgs, depths)
+
+        loss = loss_fn(predictions, (seg13, depths))
+        metric_fn.evaluate(predictions, (seg13, normals, depths))
+
+        model.zero_grad()
+        loss.backward()
+        solver.step()
+
+        loop.set_postfix(loss=loss_fn.show(), epoch=epoch_index)
+    loop.close()
+
+
+def train_nyuv2_fcn(config=None, config_test=None):
+    torch.backends.cudnn.benchmark = True
+
+    config = parse_train_config() if not config else config
+
+    _, dataloader = create_dataloader_nyuv2(batch_size=config.BATCH_SIZE, train=True)
+
+    model = fcn_resnet50(pretrained=True, num_classes=21)
+    set_parameter_requires_grad(model)
+    model.classifier = FCNHead(2048, channels=14)
+    model = model.to(DEVICE)
+
+
+    solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                              lr=config.LEARNING_RATE, betas=config.BETAS,
+                              eps=config.EPS, weight_decay=config.WEIGHT_DECAY)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(solver, milestones=config.MILESTONES, gamma=config.GAMMA)
+
+    loss_fn = SupervisedLossFunction()
+
+    epoch_idx = 0
+    if config.CHECKPOINT_FILE and config.LOAD_MODEL:
+        epoch_idx, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+
+    output_dir = os.path.join(config.OUT_PATH, re.sub("[^0-9a-zA-Z]+", "-", dt.now().isoformat()))
+
+    for epoch_idx in range(epoch_idx, config.NUM_EPOCHS):
+        metric_fn = MetricFunctionNYUv2(config.BATCH_SIZE)
+
+        model.train()
+        train_one_epoch_nyuv2_fcn(model, dataloader, loss_fn, metric_fn, solver, epoch_idx)
+        print_single_error(epoch_idx, loss_fn.show(), metric_fn.show())
+        lr_scheduler.step()
+
+        if config.TEST:
+            test_nyuv2_fcn(model, config_test)
+        if config.SAVE_MODEL:
+            save_checkpoint(epoch_idx, model, output_dir)
+
+    if not config.TEST:
+        test_nyuv2_fcn(model, config_test)
+    if not config.SAVE_MODEL:
+        save_checkpoint(epoch_idx, model, output_dir)
 
 
 def train_nyuv2(config=None, config_test=None):
@@ -142,7 +213,7 @@ def train(config=None, config_test=None):
                                       workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
 
     # model = Model()
-    model = ModelSmall()
+    model = ModelSmall(num_classes=100)
     solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                               lr=config.LEARNING_RATE, betas=config.BETAS,
                               eps=config.EPS, weight_decay=config.WEIGHT_DECAY)
@@ -185,4 +256,5 @@ if __name__ == "__main__":
     config_test = parse_test_config(read_yaml_config(opt.test))
 
     # train(config_train, config_test)
-    train_nyuv2(config_train, config_test)
+    # train_nyuv2(config_train, config_test)
+    train_nyuv2_fcn(config_train, config_test)

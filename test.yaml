@@ -8,4 +8,4 @@ SHUFFLE: True
 
 OUT_PATH: "./runs"
 LOAD_MODEL: True
-CHECKPOINT_FILE: "simple.pth"
+CHECKPOINT_FILE: "checkpoint-epoch-090.pth"
