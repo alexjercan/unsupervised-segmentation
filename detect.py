@@ -73,7 +73,8 @@ def detect_fcn(model=None, config=None):
         }
     )
 
-    dataset = LoadImages(config.JSON, transform=transform)
+    # dataset = LoadImages(config.JSON, transform=transform)
+    dataset = LoadAnimation(os.path.join("..", "NYUv2Depth"), transform=transform)
 
     if not model:
         model = fcn_resnet50(pretrained=True, num_classes=21)
@@ -103,12 +104,12 @@ def detect(model=None, config=None):
         }
     )
 
-    # dataset = LoadImages(config.JSON, transform=transform)
-    dataset = LoadAnimation(os.path.join("..", "DrivingDepth"), transform=transform)
+    dataset = LoadImages(config.JSON, transform=transform)
+    # dataset = LoadAnimation(os.path.join("..", "DrivingDepth"), transform=transform)
 
     if not model:
         # model = Model()
-        model = ModelSmall(num_classes=100, num_layers=3)
+        model = ModelSmall(num_classes=10, num_layers=3)
         model = model.to(DEVICE)
         _, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
         # model.predict.conv3 = nn.Conv2d(100, 13, kernel_size=1, stride=1, padding=0)
@@ -127,4 +128,4 @@ if __name__ == "__main__":
 
     config_detect = parse_detect_config(read_yaml_config(opt.f))
 
-    detect_fcn(config=config_detect)
+    detect(config=config_detect)
