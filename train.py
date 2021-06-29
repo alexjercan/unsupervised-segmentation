@@ -288,7 +288,6 @@ def train_fg_fcn(config=None, config_test=None):
     model.classifier = FCNHead(2048, channels=31)
     model = model.to(DEVICE)
 
-
     solver = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                               lr=config.LEARNING_RATE, betas=config.BETAS,
                               eps=config.EPS, weight_decay=config.WEIGHT_DECAY)

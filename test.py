@@ -207,7 +207,8 @@ def test_fg_fcn(model=None, config=None):
                                       workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
 
     if not model:
-        model = resnet50(num_classes=30)
+        model = fcn_resnet50(pretrained=True, num_classes=21)
+        model.classifier = FCNHead(2048, channels=31)
         model = model.to(DEVICE)
         epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
