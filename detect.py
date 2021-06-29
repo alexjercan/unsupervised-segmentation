@@ -97,7 +97,7 @@ def detect_fg(model=None, config=None):
     if not model:
         model = resnet50(num_classes=30)
         model = model.to(DEVICE)
-        # epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+        epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
     model.eval()
     for img, predictions, depths, path in generatePredictions_fg(model, dataset):

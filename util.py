@@ -181,6 +181,6 @@ def save_predictions_fg(images, predictions, depths, paths):
         pred_path = str(Path(path).with_suffix(".png"))
 
         plt.imshow(img)
-        plt.title(f'{pred}:{conf}')
+        plt.title(f'Object{pred+1}:{conf}')
         plt.savefig(pred_path)
         plt.close();

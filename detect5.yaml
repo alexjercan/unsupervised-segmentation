@@ -1,0 +1,8 @@
+JSON:
+  [
+    { "image": "data/5/1.png", "depth": "data/5/1.exr", "output": "data/5/out/1.png" },
+    # { "image": "data/5/2.png", "depth": "data/5/2.exr", "output": "data/5/out/2.png" },
+    { "image": "data/5/20.png", "depth": "data/5/20.exr", "output": "data/5/out/20.png" },
+  ]
+IMAGE_SIZE: 512
+CHECKPOINT_FILE: "class01.pth"
