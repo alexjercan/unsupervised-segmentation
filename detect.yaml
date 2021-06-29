@@ -12,4 +12,4 @@ JSON:
     { "image": "data/0009.png", "depth": "data/0009.exr", "output": "data/out/0009.png" },
   ]
 IMAGE_SIZE: 512
-CHECKPOINT_FILE: "simple.pth"
+CHECKPOINT_FILE: "helpwork02.pth"

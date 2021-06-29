@@ -1,4 +1,4 @@
-DATASET_ROOT: "../bdataset_scene"
+DATASET_ROOT: "../bdataset"
 JSON_PATH: "train.json"
 BATCH_SIZE: 2
 IMAGE_SIZE: 256

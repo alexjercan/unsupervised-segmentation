@@ -73,8 +73,8 @@ def detect_fcn(model=None, config=None):
         }
     )
 
-    # dataset = LoadImages(config.JSON, transform=transform)
-    dataset = LoadAnimation(os.path.join("..", "NYUv2Depth"), transform=transform)
+    dataset = LoadImages(config.JSON, transform=transform)
+    # dataset = LoadAnimation(os.path.join("..", "DrivingDepth"), transform=transform)
 
     if not model:
         model = fcn_resnet50(pretrained=True, num_classes=21)
@@ -128,4 +128,4 @@ if __name__ == "__main__":
 
     config_detect = parse_detect_config(read_yaml_config(opt.f))
 
-    detect(config=config_detect)
+    detect_fcn(config=config_detect)

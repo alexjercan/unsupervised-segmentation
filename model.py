@@ -266,6 +266,28 @@ class SupervisedLossFunction(nn.Module):
         return f'(total:{loss:.4f})'
 
 
+class FGLossFunction(nn.Module):
+    def __init__(self):
+        super(FGLossFunction, self).__init__()
+        self.loss = nn.CrossEntropyLoss()
+
+        self.loss_val = 0
+
+    def forward(self, predictions, data):
+        labels = data
+
+        loss = self.loss(predictions, labels)
+
+        self.loss_val = loss.item()
+
+        return loss
+
+    def show(self):
+        loss = self.loss_val
+        return f'(total:{loss:.4f})'
+
+
+
 if __name__ == "__main__":
     img = torch.rand((4, 3, 256, 256))
     depth = torch.rand((4, 1, 256, 256))

@@ -25,6 +25,14 @@ def create_dataloader(dataset_root, json_path, batch_size=2, transform=None, wor
     return dataset, dataloader
 
 
+def create_dataloader_fg(dataset_root, json_path, batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True):
+    dataset = FGBDataset(dataset_root, json_path, transform=transform)
+    batch_size = min(batch_size, len(dataset))
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, workers])
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=nw, pin_memory=pin_memory, shuffle=shuffle)
+    return dataset, dataloader
+
+
 def create_dataloader_nyuv2(batch_size=2, transform=None, workers=8, pin_memory=True, shuffle=True, train=False):
     t = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     dataset = NYUv2(root="../NYUv2", download=True,
@@ -74,6 +82,45 @@ class BDataset(Dataset):
             depth = augmentations["depth"]
 
         return img, normal, depth
+
+
+class FGBDataset(Dataset):
+    def __init__(self, dataset_root, json_path, transform=None):
+        super(FGBDataset, self).__init__()
+        self.dataset_root = dataset_root
+        self.json_path = os.path.join(dataset_root, json_path)
+        self.transform = transform
+
+        with open(self.json_path, "r") as f:
+            self.json_data = json.load(f)
+
+    def __len__(self):
+        return len(self.json_data)
+
+    def __getitem__(self, index):
+        data = self.__load__(index)
+        data = self.__transform__(data)
+        return data
+
+    def __load__(self, index):
+        img_path = os.path.join(self.dataset_root, self.json_data[index]["image"])
+        depth_path = os.path.join(self.dataset_root, self.json_data[index]["depth"])
+
+        label = int(self.json_data[index]["image"].split("_")[0])
+        img = load_image(img_path)
+        depth = load_depth(depth_path)
+
+        return img, depth, label
+
+    def __transform__(self, data):
+        img, depth, label = data
+
+        if self.transform is not None:
+            augmentations = self.transform(image=img, depth=depth)
+            img = augmentations["image"]
+            depth = augmentations["depth"]
+
+        return img, depth, label
 
 
 class LoadImages():

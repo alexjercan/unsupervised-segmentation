@@ -43,6 +43,29 @@ class MetricFunction():
         return format_str % (error['S_IOU'], error['S_P'], error['S_R'], error['S_F1'])
 
 
+class FGMetricFunction():
+    def __init__(self, batch_size) -> None:
+        self.batch_size = batch_size
+        self.total_size = 0
+        self.error_sum = {}
+        self.error_avg = {}
+
+    def evaluate(self, predictions, data):
+        labels = data
+        _, predictions = torch.max(predictions, 1)
+
+        error_val = evaluate_error_fg(predictions, labels)
+
+        self.total_size += self.batch_size
+        self.error_avg = avg_error(self.error_sum, error_val, self.total_size, self.batch_size)
+        return self.error_avg
+
+    def show(self):
+        error = self.error_avg
+        format_str = ('======SEGMENTATION========\ACC=%.4f\n')
+        return format_str % (error['ACC'])
+
+
 class MetricFunctionNYUv2():
     def __init__(self, batch_size) -> None:
         self.batch_size = batch_size
@@ -85,6 +108,14 @@ class MetricFunctionNYUv2():
         format_str = ('======SEGMENTATION========\nIOU=%.4f\tP=%.4f\tR=%.4f\tF1=%.4f\n')
         return format_str % (error['S_IOU'], error['S_P'], error['S_R'], error['S_F1'])
 
+
+def evaluate_error_fg(predictions, targets):
+    error = {}
+
+    num_correct = (predictions == targets).sum().item()
+    error['ACC'] = float(num_correct) / float(predictions.shape[0])
+
+    return error
 
 
 def evaluate_error_classification(predictions, targets):

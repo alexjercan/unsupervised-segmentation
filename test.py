@@ -5,6 +5,8 @@
 # References:
 #
 
+from torchvision.models.resnet import resnet50
+from torchvision.models.segmentation.fcn import FCNHead
 from torchvision.models.segmentation.segmentation import fcn_resnet50
 from util import plot_predictions
 import torch
@@ -14,12 +16,29 @@ import my_albumentations as M
 import torch.nn as nn
 
 from tqdm import tqdm
-from metrics import MetricFunction, MetricFunctionNYUv2, print_single_error
+from metrics import FGMetricFunction, MetricFunction, MetricFunctionNYUv2, print_single_error
 from config import parse_test_config, DEVICE, read_yaml_config
-from model import Model, LossFunction, ModelSmall, SupervisedLossFunction
+from model import FGLossFunction, Model, LossFunction, ModelSmall, SupervisedLossFunction
 from original import og_run_test_nyuv2, OgModel, OgLossFunction
 from general import generate_layers, load_checkpoint, tensors_to_device
-from dataset import create_dataloader, create_dataloader_nyuv2
+from dataset import create_dataloader, create_dataloader_fg, create_dataloader_nyuv2
+
+
+def run_test_fg(model, dataloader, loss_fn, metric_fn):
+    def runmodel(model, imgs, depths):
+        layers = generate_layers(imgs, depths, k=2)
+        return model(layers[0])
+
+    loop = tqdm(dataloader, position=0, leave=True)
+
+    for _, tensors in enumerate(loop):
+        imgs, depths, labels = tensors_to_device(tensors, DEVICE)
+        with torch.no_grad():
+            predictions = runmodel(model, imgs, depths)
+
+            loss_fn(predictions, labels)
+            metric_fn.evaluate(predictions, labels)
+    loop.close()
 
 
 def run_test(model, dataloader, loss_fn, metric_fn):
@@ -105,7 +124,8 @@ def test_nyuv2_fcn(model=None, config=None):
     _, dataloader = create_dataloader_nyuv2(batch_size=config.BATCH_SIZE, train=True)
 
     if not model:
-        model = fcn_resnet50(pretrained=False, num_classes=14)
+        model = fcn_resnet50(pretrained=True, num_classes=21)
+        model.classifier = FCNHead(2048, channels=14)
         model = model.to(DEVICE)
         epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
 
@@ -114,6 +134,42 @@ def test_nyuv2_fcn(model=None, config=None):
 
     model.eval()
     run_test_nyuv2_fcn(model, dataloader, loss_fn, metric_fn)
+    print(metric_fn.best_iou, metric_fn.best_index)
+    print(metric_fn.ious)
+    print(sorted(range(len(metric_fn.ious)), key=lambda k: metric_fn.ious[k]))
+    print_single_error(epoch, loss_fn.show(), metric_fn.show())
+
+
+def test_fg(model=None, config=None):
+    epoch = 0
+    torch.backends.cudnn.benchmark = True
+
+    config = parse_test_config() if not config else config
+
+    transform = A.Compose(
+        [
+            A.Normalize(),
+            M.MyToTensorV2(),
+        ],
+        additional_targets={
+            'depth' : 'depth',
+        }
+    )
+
+    _, dataloader = create_dataloader_fg(config.DATASET_ROOT, config.JSON_PATH,
+                                      batch_size=config.BATCH_SIZE, transform=transform,
+                                      workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
+
+    if not model:
+        model = resnet50(num_classes=30)
+        model = model.to(DEVICE)
+        epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+
+    loss_fn = FGLossFunction()
+    metric_fn = FGMetricFunction(config.BATCH_SIZE)
+
+    model.eval()
+    run_test_fg(model, dataloader, loss_fn, metric_fn)
     print_single_error(epoch, loss_fn.show(), metric_fn.show())
 
 

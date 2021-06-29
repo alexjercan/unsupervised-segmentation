@@ -1,7 +1,7 @@
 JSON:
   [
-    { "image": "data/4/0342.png", "depth": "data/4/0342.exr", "output": "data/4/out/0342.png" },
-    { "image": "data/4/0237.png", "depth": "data/4/0237.exr", "output": "data/4/out/0237.png" },
+    { "image": "data/4/0248.png", "depth": "data/4/0248.exr", "output": "data/4/out/0248.png" },
+    { "image": "data/4/0342.png", "depth": "data/4/0342.exr", "output": "data/4/out/0342_.png" },
   ]
 IMAGE_SIZE: 512
-CHECKPOINT_FILE: "checkpoint-epoch-090.pth"
+CHECKPOINT_FILE: "helpwork02.pth"
