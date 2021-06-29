@@ -5,6 +5,8 @@
 # References:
 #
 
+import torch
+from general import generate_layers
 import os
 import json
 import glob
@@ -12,7 +14,7 @@ from copy import copy
 import cv2
 
 from torch.utils.data import Dataset, DataLoader
-from util import load_depth, load_image, load_normal
+from util import crop2content, load_depth, load_image, load_normal
 from nyuv2 import NYUv2
 from torchvision import transforms
 
@@ -110,7 +112,14 @@ class FGBDataset(Dataset):
         img = load_image(img_path)
         depth = load_depth(depth_path)
 
-        return img, depth, label
+        img = torch.tensor(img)
+        depth = torch.tensor(depth)
+        layers = generate_layers(img.unsqueeze(0), depth.unsqueeze(0), k=2, offset=255)
+        img = layers[0].squeeze(0).numpy()
+
+        img, _, _ = crop2content(img)
+
+        return img, depth.numpy(), label
 
     def __transform__(self, data):
         img, depth, label = data

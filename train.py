@@ -10,6 +10,7 @@ from torchvision.models.segmentation.fcn import FCNHead
 from torchvision.models.segmentation.segmentation import fcn_resnet50
 from metrics import FGMetricFunction, MetricFunction, MetricFunctionNYUv2, print_single_error
 import os
+from util import plot_raw_surfaces
 import re
 
 import torch
@@ -91,16 +92,12 @@ def train_one_epoch_nyuv2_fcn(model, dataloader, loss_fn, metric_fn, solver, epo
 
 
 def train_one_epoch_fg(model, dataloader, loss_fn, metric_fn, solver, epoch_index):
-    def runmodel(model, imgs, depths):
-        layers = generate_layers(imgs, depths, k=2)
-        return model(layers[0])
-
     loop = tqdm(dataloader, position=0, leave=True)
 
     for i, tensors in enumerate(loop):
-        imgs, depths, labels = tensors_to_device(tensors, DEVICE)
+        imgs, _, labels = tensors_to_device(tensors, DEVICE)
 
-        predictions = runmodel(model, imgs, depths)
+        predictions = model(imgs)
 
         loss = loss_fn(predictions, labels)
         metric_fn.evaluate(predictions, labels)

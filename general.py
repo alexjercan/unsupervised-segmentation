@@ -37,10 +37,10 @@ def squash_image(layers, depth, interval, k):
     return torch.stack([generate_layer(layers[:, :, i], depth.squeeze(0), interval, i, -1) for i in range(k)])
 
 
-def generate_layers(imgs, depths, k):
+def generate_layers(imgs, depths, k, offset=0):
     bs = imgs.shape[0]
     intervals = generate_intervals(depths, k)
-    layers = [torch.stack([generate_layer(imgs[i], depths[i], intervals[i], j, 0) for i in range(bs)]) for j in range(k)]
+    layers = [torch.stack([generate_layer(imgs[i], depths[i], intervals[i], j, offset) for i in range(bs)]) for j in range(k)]
     return layers
 
 
