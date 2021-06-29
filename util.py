@@ -131,3 +131,18 @@ def save_predictions(images, predictions, depths, paths):
         # plt.imshow(rgb)
         # plt.savefig(str(Path(path).with_suffix(".png")))
         # plt.close();
+
+
+def save_predictions_fg(images, predictions, depths, paths):
+    plt.axis('off')
+    plt.rcParams['figure.dpi'] = 200
+
+    confidences, predictions = torch.max(predictions, 1)
+
+    for img, conf, pred, path in zip(images, confidences, predictions, paths):
+        pred_path = str(Path(path).with_suffix(".png"))
+
+        plt.imshow(img)
+        plt.title(f'{pred}:{conf}')
+        plt.savefig(pred_path)
+        plt.close();
