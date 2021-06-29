@@ -117,9 +117,9 @@ class FGBDataset(Dataset):
         layers = generate_layers(img.unsqueeze(0), depth.unsqueeze(0), k=2, offset=255)
         img = layers[0].squeeze(0).numpy()
 
-        img, _, _ = crop2content(img)
+        img, _, mask = crop2content(img)
 
-        return img, depth.numpy(), label
+        return img, mask // 255 * label, label
 
     def __transform__(self, data):
         img, depth, label = data

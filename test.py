@@ -16,9 +16,9 @@ import my_albumentations as M
 import torch.nn as nn
 
 from tqdm import tqdm
-from metrics import FGMetricFunction, MetricFunction, MetricFunctionNYUv2, print_single_error
+from metrics import FCNFGMetricFunction, FGMetricFunction, MetricFunction, MetricFunctionNYUv2, print_single_error
 from config import parse_test_config, DEVICE, read_yaml_config
-from model import FGLossFunction, Model, LossFunction, ModelSmall, SupervisedLossFunction
+from model import FGFCNLossFunction, FGLossFunction, Model, LossFunction, ModelSmall, SupervisedLossFunction
 from original import og_run_test_nyuv2, OgModel, OgLossFunction
 from general import generate_layers, load_checkpoint, tensors_to_device
 from dataset import create_dataloader, create_dataloader_fg, create_dataloader_nyuv2
@@ -64,6 +64,19 @@ def run_test_nyuv2(model, dataloader, loss_fn, metric_fn):
 
             loss_fn(predictions, (normals, depths))
             metric_fn.evaluate(predictions, (seg13, normals, depths))
+    loop.close()
+
+
+def run_test_fg_fcn(model, dataloader, loss_fn, metric_fn):
+    loop = tqdm(dataloader, position=0, leave=True)
+
+    for i, tensors in enumerate(loop):
+        imgs, masks, _ = tensors_to_device(tensors, DEVICE)
+        with torch.no_grad():
+            predictions = model(imgs)
+
+            loss_fn(predictions, masks)
+            metric_fn.evaluate(predictions, masks)
     loop.close()
 
 
@@ -170,6 +183,39 @@ def test_fg(model=None, config=None):
 
     model.eval()
     run_test_fg(model, dataloader, loss_fn, metric_fn)
+    print_single_error(epoch, loss_fn.show(), metric_fn.show())
+
+
+def test_fg_fcn(model=None, config=None):
+    epoch = 0
+    torch.backends.cudnn.benchmark = True
+
+    config = parse_test_config() if not config else config
+
+    transform = A.Compose(
+        [
+            A.Normalize(),
+            M.MyToTensorV2(),
+        ],
+        additional_targets={
+            'depth' : 'depth',
+        }
+    )
+
+    _, dataloader = create_dataloader_fg(config.DATASET_ROOT, config.JSON_PATH,
+                                      batch_size=config.BATCH_SIZE, transform=transform,
+                                      workers=config.WORKERS, pin_memory=config.PIN_MEMORY, shuffle=config.SHUFFLE)
+
+    if not model:
+        model = resnet50(num_classes=30)
+        model = model.to(DEVICE)
+        epoch, model = load_checkpoint(model, config.CHECKPOINT_FILE, DEVICE)
+
+    loss_fn = FGFCNLossFunction()
+    metric_fn = FCNFGMetricFunction(config.BATCH_SIZE)
+
+    model.eval()
+    run_test_fg_fcn(model, dataloader, loss_fn, metric_fn)
     print_single_error(epoch, loss_fn.show(), metric_fn.show())
 
 

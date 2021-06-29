@@ -266,6 +266,27 @@ class SupervisedLossFunction(nn.Module):
         return f'(total:{loss:.4f})'
 
 
+class FGFCNLossFunction(nn.Module):
+    def __init__(self):
+        super(FGFCNLossFunction, self).__init__()
+        self.loss = nn.CrossEntropyLoss()
+
+        self.loss_val = 0
+
+    def forward(self, predictions, data):
+        masks = data
+
+        loss = self.loss(predictions, masks)
+
+        self.loss_val = loss.item()
+
+        return loss
+
+    def show(self):
+        loss = self.loss_val
+        return f'(total:{loss:.4f})'
+
+
 class FGLossFunction(nn.Module):
     def __init__(self):
         super(FGLossFunction, self).__init__()
